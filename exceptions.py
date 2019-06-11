@@ -1,0 +1,2 @@
+class EnumChoiceFieldException(Exception):
+    pass

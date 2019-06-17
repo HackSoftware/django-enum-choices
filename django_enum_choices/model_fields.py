@@ -8,6 +8,8 @@ from .exceptions import EnumChoiceFieldException
 
 
 class EnumIntegerField(EnumInternalFieldMixin, IntegerField):
+    # TODO: Implement `deconstruct`
+
     def __init__(self, enum_class, *args, **kwargs):
         super().__init__(enum_class, *args, **kwargs)
 
@@ -29,7 +31,7 @@ class EnumChoiceField:
     def __new__(cls, enum_class: Enum, **kwargs):
         if not (Enum in enum_class.__mro__):
             raise EnumChoiceFieldException(
-                '`choices` argument must be a child of `Enum`'
+                '`enum_class` argument must be a child of `Enum`'
             )
 
         instance = EnumChoiceFieldBuilder(enum_class, **kwargs)
@@ -40,6 +42,8 @@ class EnumChoiceField:
 
 
 class EnumChoiceFieldBuilder:
+    # TODO: Support custom bases
+
     def __init__(self, enum_class: Enum, **kwargs):
         self.enum_class = enum_class
         self._choices = [choice.value for choice in enum_class]

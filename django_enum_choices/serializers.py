@@ -2,7 +2,7 @@ from rest_framework import serializers
 
 
 class EnumChoiceField(serializers.Field):
-    # TODO: `many` behaviour
+    # TODO: `many` behaviour; `ModelSerializer` implicit conversion
 
     NO_KEY_MSG = 'Key {failing_key} is not a valid {enum_class_name}'
 

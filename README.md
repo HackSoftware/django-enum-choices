@@ -23,7 +23,7 @@ class FooBarEnumeration(Enum):
 
 from django import models
 
-from django_enum_choices.model_fields import EnumChoiceField
+from django_enum_choices.fields import EnumChoiceField
 
 from .enums import FooBarEnumeration
 
@@ -45,7 +45,7 @@ Out[2]: <FooBarEnumeration.BAR: 'bar'>
 
 from rest_framework import serializers
 
-from django_enum_choices.serializer_fields import EnumChoiceField
+from django_enum_choices.serializers import EnumChoiceField
 
 class MyModelSerializer(serializers.ModelSerializer):
     foo_bar_field = EnumChoiceField(enum_class=FooBarEnumeration)

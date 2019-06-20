@@ -5,6 +5,7 @@ from django.test import TestCase
 from django_enum_choices.fields import EnumChoiceFieldBuilder, EnumIntegerField, EnumCharField, EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
 from .testapp.enumerations import CharTestEnum, IntTestEnum
+from .testapp.models import IntegerEnumeratedModel, StringEnumeratedModel
 
 
 class EnumChoiceFieldBuilderTests(TestCase):
@@ -206,3 +207,79 @@ class EnumChoiceFieldTests(TestCase):
 
         with self.assertRaises(EnumChoiceFieldException):
             instance.from_db_value(7, None, None)
+
+
+class ModelIntegrationTests(TestCase):
+    def test_can_create_object_with_char_base(self):
+        instance = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+        instance.refresh_from_db()
+
+        self.assertEqual(instance.enumeration, CharTestEnum.FIRST)
+
+    def test_can_assign_enumeration_with_char_base(self):
+        instance = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+        instance.refresh_from_db()
+
+        instance.enumeration = CharTestEnum.SECOND
+        instance.save()
+        instance.refresh_from_db()
+
+        self.assertEqual(instance.enumeration, CharTestEnum.SECOND)
+
+    def test_can_filter_by_enumeration_with_char_base(self):
+        first = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+        second = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.SECOND
+        )
+
+        first_qs = StringEnumeratedModel.objects.filter(enumeration=CharTestEnum.FIRST)
+        second_qs = StringEnumeratedModel.objects.filter(enumeration=CharTestEnum.SECOND)
+
+        self.assertIn(first, first_qs)
+        self.assertNotIn(second, first_qs)
+
+        self.assertIn(second, second_qs)
+        self.assertNotIn(first, second_qs)
+
+    def test_can_create_object_with_int_base(self):
+        instance = IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.FIRST
+        )
+        instance.refresh_from_db()
+
+        self.assertEqual(instance.enumeration, IntTestEnum.FIRST)
+
+    def test_can_assign_enumeration_with_int_base(self):
+        instance = IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.FIRST
+        )
+        instance.refresh_from_db()
+
+        instance.enumeration = IntTestEnum.SECOND
+        instance.save()
+        instance.refresh_from_db()
+
+        self.assertEqual(instance.enumeration, IntTestEnum.SECOND)
+
+    def test_can_filter_by_enumeration_with_int_base(self):
+        first = IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.FIRST
+        )
+        second = IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.SECOND
+        )
+
+        first_qs = IntegerEnumeratedModel.objects.filter(enumeration=IntTestEnum.FIRST)
+        second_qs = IntegerEnumeratedModel.objects.filter(enumeration=IntTestEnum.SECOND)
+
+        self.assertIn(first, first_qs)
+        self.assertNotIn(second, first_qs)
+
+        self.assertIn(second, second_qs)
+        self.assertNotIn(first, second_qs)

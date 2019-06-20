@@ -35,3 +35,11 @@ class EnumInternalFieldMixin:
             return value
 
         return self.to_enum_value(value)
+
+    def deconstruct(self):
+        name, path, args, kwargs = super().deconstruct()
+
+        if self.enum_class:
+            kwargs['enum_class'] = self.enum_class
+
+        return name, path, args, kwargs

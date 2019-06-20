@@ -18,14 +18,6 @@ class EnumCharField(EnumInternalFieldMixin, CharField):
     def __init__(self, enum_class, *args, **kwargs):
         super().__init__(enum_class, *args, **kwargs)
 
-    def deconstruct(self):
-        name, path, args, kwargs = super().deconstruct()
-
-        if self.enum_class:
-            kwargs['enum_class'] = self.enum_class
-
-        return name, path, args, kwargs
-
 
 class EnumChoiceField:
     def __new__(cls, enum_class: Enum, **kwargs):

@@ -75,7 +75,7 @@ class EnumChoiceFieldBuilder:
             )
 
         if base is EnumCharField:
-            max_length = self._calculate_max_length()
+            max_length = self._calculate_max_length(**kwargs)
 
             # Removing `max_length` as it is calculated explicitly.
             kwargs.pop('max_length', None)

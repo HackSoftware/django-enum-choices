@@ -16,8 +16,7 @@ VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'django',
-    'djangorestframework'
+    'django'
 ]
 
 # What packages are optional?

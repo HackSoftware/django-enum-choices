@@ -153,6 +153,27 @@ class EnumChoiceFieldTests(TestCase):
         with self.assertRaises(EnumChoiceFieldException):
             instance.from_db_value(7, None, None)
 
+    def test_get_redable_value_is_used(self):
+        class TestEnum(Enum):
+            A = 1
+            B = 2
+
+            def get_readable_value(enum_instance):
+                if enum_instance == TestEnum.A:
+                    return 'A'
+
+                if enum_instance == TestEnum.B:
+                    return 'B'
+
+        instance = EnumChoiceField(enum_class=TestEnum)
+
+        expected_choices = [
+            ('1', 'A'),
+            ('2', 'B')
+        ]
+
+        self.assertEqual(expected_choices, instance.choices)
+
 
 class ModelIntegrationTests(TestCase):
     def test_can_create_object_with_char_base(self):

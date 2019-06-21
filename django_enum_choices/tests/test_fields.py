@@ -153,7 +153,23 @@ class EnumChoiceFieldTests(TestCase):
         with self.assertRaises(EnumChoiceFieldException):
             instance.from_db_value(7, None, None)
 
-    def test_get_redable_value_is_used(self):
+    def test_get_readable_should_be_a_callable(self):
+        class TestEnum(Enum):
+            A = 1
+            B = 2
+
+            get_readable_value = 3
+        instance = EnumChoiceField(enum_class=TestEnum)
+
+        expected_choices = [
+            ('1', '1'),
+            ('2', '2'),
+            ('3', '3')
+        ]
+
+        self.assertEqual(expected_choices, instance.choices)
+
+    def test_get_readable_value_is_used(self):
         class TestEnum(Enum):
             A = 1
             B = 2

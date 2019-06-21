@@ -21,17 +21,24 @@ class EnumChoiceField(CharField):
         super().__init__(**kwargs)
 
     def _pack_choices(self) -> Tuple[Tuple[Union[int, str]]]:
-        return [(str(choice.value), str(choice.value)) for choice in self.enum_class]
+        return [
+            (str(choice.value), str(choice.value))
+            for choice in self.enum_class
+        ]
 
     def build_choices(self):
-        packed_choices = self._pack_choices()
+        get_readable_value = getattr(self.enum_class, 'get_readable_value', None)
 
-        if hasattr(self.enum_class, 'get_readable_value'):
+        if callable(get_readable_value):
             # Used if different readable values are wanted from the
             # ones stored in the enum class
             packed_choices = [(
                 str(choice.value), self.enum_class.get_readable_value(choice)
             ) for choice in self.enum_class]
+
+            return packed_choices
+
+        packed_choices = self._pack_choices()
 
         return packed_choices
 

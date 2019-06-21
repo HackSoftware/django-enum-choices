@@ -132,7 +132,7 @@ class EnumChoiceFieldTests(TestCase):
 
         self.assertEqual(result, 'first')
 
-    def test_from_db_value_returns_None_when_value_is_none(self):
+    def test_from_db_value_returns_none_when_value_is_none(self):
         instance = EnumChoiceField(enum_class=IntTestEnum)
 
         result = instance.from_db_value(None, None, None)

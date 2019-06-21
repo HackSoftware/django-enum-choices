@@ -2,11 +2,14 @@ from enum import Enum
 from typing import Tuple, Union
 
 from django.db.models import CharField
+from django.utils.translation import gettext as _
 
 from .exceptions import EnumChoiceFieldException
 
 
 class EnumChoiceField(CharField):
+    description = _('EnumChoiceField for %(enum_class)')
+
     def __init__(self, enum_class: Enum, **kwargs):
         if not (Enum in enum_class.__mro__):
             raise EnumChoiceFieldException(
@@ -21,17 +24,24 @@ class EnumChoiceField(CharField):
         super().__init__(**kwargs)
 
     def _pack_choices(self) -> Tuple[Tuple[Union[int, str]]]:
-        return [(str(choice.value), str(choice.value)) for choice in self.enum_class]
+        return [
+            (str(choice.value), str(choice.value))
+            for choice in self.enum_class
+        ]
 
     def build_choices(self):
-        packed_choices = self._pack_choices()
+        get_readable_value = getattr(self.enum_class, 'get_readable_value', None)
 
-        if hasattr(self.enum_class, 'get_readable_value'):
+        if callable(get_readable_value):
             # Used if different readable values are wanted from the
             # ones stored in the enum class
             packed_choices = [(
                 str(choice.value), self.enum_class.get_readable_value(choice)
             ) for choice in self.enum_class]
+
+            return packed_choices
+
+        packed_choices = self._pack_choices()
 
         return packed_choices
 
@@ -41,6 +51,7 @@ class EnumChoiceField(CharField):
         if max_length is None:
             max_length = max([len(choice) for choice, _ in kwargs['choices']])
 
+        # TODO: Do we need this? Can we just return the max length every time
         if max_length < 255:
             max_length = 255
 
@@ -58,14 +69,11 @@ class EnumChoiceField(CharField):
             f'Value {value} not found in {self.enum_class}'
         )
 
-    def to_db_value(self, value):
+    def get_prep_value(self, value):
         if value is None:
             return
 
         return str(value.value)
-
-    def get_prep_value(self, value):
-        return self.to_db_value(value)
 
     def from_db_value(self, value, expression, connection):
         return self.to_enum_value(value)
@@ -83,3 +91,11 @@ class EnumChoiceField(CharField):
             kwargs['enum_class'] = self.enum_class
 
         return name, path, args, kwargs
+
+    def formfield(self, **kwargs):
+        # TODO: Implement
+        return super().formfield(**kwargs)
+
+    def value_to_string(self, obj):
+        value = self.value_from_object(obj)
+        return self.get_prep_value(value)

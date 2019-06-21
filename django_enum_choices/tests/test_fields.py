@@ -1,6 +1,7 @@
 from enum import Enum
 
 from django.test import TestCase
+from django.core import serializers
 
 from django_enum_choices.fields import EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
@@ -16,9 +17,16 @@ class EnumChoiceFieldTests(TestCase):
             field.enum_class,
             CharTestEnum
         )
+
+        expected_choices = [
+            ('first', 'first'),
+            ('second', 'second'),
+            ('third', 'third'),
+        ]
+
         self.assertEqual(
+            expected_choices,
             field.choices,
-            [(choice, choice) for choice in ['first', 'second', 'third']]
         )
 
     def test_builder_initializes_int_choice_values(self):
@@ -28,37 +36,35 @@ class EnumChoiceFieldTests(TestCase):
             field.enum_class,
             IntTestEnum
         )
+
+        expected_choices = [
+            ('1', '1'),
+            ('2', '2'),
+            ('3', '3'),
+        ]
+
         self.assertEqual(
+            expected_choices,
             field.choices,
-            [(choice, choice) for choice in ['1', '2', '3']]
         )
 
-    def test_builder_packs_string_choices_correctly(self):
-        field = EnumChoiceField(enum_class=CharTestEnum)
+    def test_builder_initializes_arbitrary_choice_values_by_stringifying_them(self):
+        class Foo:
+            def __str__(self):
+                return 'foo'
 
-        packed = field._pack_choices()
+        class TestEnum(Enum):
+            FOO = Foo()
 
-        self.assertEqual(
-            list(packed),
-            [
-                ('first', 'first'),
-                ('second', 'second'),
-                ('third', 'third')
-            ]
-        )
+        field = EnumChoiceField(enum_class=TestEnum)
 
-    def test_builder_packs_int_choices_correctly(self):
-        field = EnumChoiceField(enum_class=IntTestEnum)
-
-        packed = field._pack_choices()
+        expected_choices = [
+            ('foo', 'foo')
+        ]
 
         self.assertEqual(
-            list(packed),
-            [
-                ('1', '1'),
-                ('2', '2'),
-                ('3', '3')
-            ]
+            expected_choices,
+            field.choices,
         )
 
     def test_calculate_max_length_returns_longest_choice_length_if_max_length_not_in_kwargs_and_longer_than_255(
@@ -72,7 +78,7 @@ class EnumChoiceFieldTests(TestCase):
 
         result = field._calculate_max_length(choices=field.build_choices())
 
-        self.assertEqual(result, 256)
+        self.assertEqual(256, result)
 
     def test_calculate_max_length_returns_255_when_longest_choice_is_less_than_255_and_max_length_not_in_kwargs(
         self
@@ -85,23 +91,23 @@ class EnumChoiceFieldTests(TestCase):
 
         result = field._calculate_max_length(choices=field.build_choices())
 
-        self.assertEqual(result, 255)
+        self.assertEqual(255, result)
 
     def test_calculate_max_length_returns_255_when_max_length_in_kwargs_and_less_than_255(self):
         field = EnumChoiceField(enum_class=CharTestEnum)
 
         result = field._calculate_max_length(max_length=50, choices=field.build_choices())
 
-        self.assertEqual(result, 255)
+        self.assertEqual(255, result)
 
     def test_calculate_max_length_returns_max_length_from_kwargs_more_than_255(self):
         field = EnumChoiceField(enum_class=CharTestEnum)
 
         result = field._calculate_max_length(max_length=256, choices=field.build_choices())
 
-        self.assertEqual(result, 256)
+        self.assertEqual(256, result)
 
-    def test_raises_exception_when_enum_class_is_not_enumeration(self):
+    def test_field_raises_exception_when_enum_class_is_not_enumeration(self):
         class FailingEnum:
             FOO = 'foo'
             BAR = 'bar'
@@ -126,7 +132,7 @@ class EnumChoiceFieldTests(TestCase):
 
         self.assertEqual(result, 'first')
 
-    def test_from_db_value_returns_None_when_value_is_none(self):
+    def test_from_db_value_returns_none_when_value_is_none(self):
         instance = EnumChoiceField(enum_class=IntTestEnum)
 
         result = instance.from_db_value(None, None, None)
@@ -152,6 +158,57 @@ class EnumChoiceFieldTests(TestCase):
 
         with self.assertRaises(EnumChoiceFieldException):
             instance.from_db_value(7, None, None)
+
+    def test_deconstruct_behaves_as_expected(self):
+        """
+        Idea taken from:
+        https://docs.djangoproject.com/en/2.2/howto/custom-model-fields/#field-deconstruction
+        """
+        instance = EnumChoiceField(enum_class=IntTestEnum)
+        name, path, args, kwargs = instance.deconstruct()
+
+        new_instance = EnumChoiceField(*args, **kwargs)
+
+        self.assertEqual(instance.enum_class, new_instance.enum_class)
+        self.assertEqual(instance.choices, new_instance.choices)
+        self.assertEqual(instance.max_length, new_instance.max_length)
+
+    def test_get_readable_should_be_a_callable(self):
+        class TestEnum(Enum):
+            A = 1
+            B = 2
+
+            get_readable_value = 3
+        instance = EnumChoiceField(enum_class=TestEnum)
+
+        expected_choices = [
+            ('1', '1'),
+            ('2', '2'),
+            ('3', '3')
+        ]
+
+        self.assertEqual(expected_choices, instance.choices)
+
+    def test_get_readable_value_is_used_when_callable(self):
+        class TestEnum(Enum):
+            A = 1
+            B = 2
+
+            def get_readable_value(enum_instance):
+                if enum_instance == TestEnum.A:
+                    return 'A'
+
+                if enum_instance == TestEnum.B:
+                    return 'B'
+
+        instance = EnumChoiceField(enum_class=TestEnum)
+
+        expected_choices = [
+            ('1', 'A'),
+            ('2', 'B')
+        ]
+
+        self.assertEqual(expected_choices, instance.choices)
 
 
 class ModelIntegrationTests(TestCase):
@@ -228,3 +285,28 @@ class ModelIntegrationTests(TestCase):
 
         self.assertIn(second, second_qs)
         self.assertNotIn(first, second_qs)
+
+    def test_serialization(self):
+        IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.FIRST
+        )
+
+        data = serializers.serialize('json', IntegerEnumeratedModel.objects.all())
+
+        expected = '[{"model": "testapp.integerenumeratedmodel", "pk": 1, "fields": {"enumeration": "1"}}]'
+
+        self.assertEqual(expected, data)
+
+    def test_deserialization(self):
+        instance = IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.FIRST
+        )
+
+        data = serializers.serialize('json', IntegerEnumeratedModel.objects.all())
+        objects = list(serializers.deserialize('json', data))
+
+        self.assertEqual(1, len(objects))
+
+        deserialized_instance = objects[0]
+
+        self.assertEqual(instance, deserialized_instance.object)

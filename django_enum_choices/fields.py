@@ -2,11 +2,14 @@ from enum import Enum
 from typing import Tuple, Union
 
 from django.db.models import CharField
+from django.utils.translation import gettext as _
 
 from .exceptions import EnumChoiceFieldException
 
 
 class EnumChoiceField(CharField):
+    description = _('EnumChoiceField for %(enum_class)')
+
     def __init__(self, enum_class: Enum, **kwargs):
         if not (Enum in enum_class.__mro__):
             raise EnumChoiceFieldException(

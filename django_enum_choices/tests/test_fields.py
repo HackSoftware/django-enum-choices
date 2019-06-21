@@ -16,9 +16,16 @@ class EnumChoiceFieldTests(TestCase):
             field.enum_class,
             CharTestEnum
         )
+
+        expected_choices = [
+            ('first', 'first'),
+            ('second', 'second'),
+            ('third', 'third'),
+        ]
+
         self.assertEqual(
+            expected_choices,
             field.choices,
-            [(choice, choice) for choice in ['first', 'second', 'third']]
         )
 
     def test_builder_initializes_int_choice_values(self):
@@ -28,37 +35,35 @@ class EnumChoiceFieldTests(TestCase):
             field.enum_class,
             IntTestEnum
         )
+
+        expected_choices = [
+            ('1', '1'),
+            ('2', '2'),
+            ('3', '3'),
+        ]
+
         self.assertEqual(
+            expected_choices,
             field.choices,
-            [(choice, choice) for choice in ['1', '2', '3']]
         )
 
-    def test_builder_packs_string_choices_correctly(self):
-        field = EnumChoiceField(enum_class=CharTestEnum)
+    def test_builder_initializes_arbitrary_choice_values_by_stringifying_them(self):
+        class Foo:
+            def __str__(self):
+                return 'foo'
 
-        packed = field._pack_choices()
+        class TestEnum(Enum):
+            FOO = Foo()
 
-        self.assertEqual(
-            list(packed),
-            [
-                ('first', 'first'),
-                ('second', 'second'),
-                ('third', 'third')
-            ]
-        )
+        field = EnumChoiceField(enum_class=TestEnum)
 
-    def test_builder_packs_int_choices_correctly(self):
-        field = EnumChoiceField(enum_class=IntTestEnum)
-
-        packed = field._pack_choices()
+        expected_choices = [
+            ('foo', 'foo')
+        ]
 
         self.assertEqual(
-            list(packed),
-            [
-                ('1', '1'),
-                ('2', '2'),
-                ('3', '3')
-            ]
+            expected_choices,
+            field.choices,
         )
 
     def test_calculate_max_length_returns_longest_choice_length_if_max_length_not_in_kwargs_and_longer_than_255(
@@ -72,7 +77,7 @@ class EnumChoiceFieldTests(TestCase):
 
         result = field._calculate_max_length(choices=field.build_choices())
 
-        self.assertEqual(result, 256)
+        self.assertEqual(256, result)
 
     def test_calculate_max_length_returns_255_when_longest_choice_is_less_than_255_and_max_length_not_in_kwargs(
         self
@@ -85,23 +90,23 @@ class EnumChoiceFieldTests(TestCase):
 
         result = field._calculate_max_length(choices=field.build_choices())
 
-        self.assertEqual(result, 255)
+        self.assertEqual(255, result)
 
     def test_calculate_max_length_returns_255_when_max_length_in_kwargs_and_less_than_255(self):
         field = EnumChoiceField(enum_class=CharTestEnum)
 
         result = field._calculate_max_length(max_length=50, choices=field.build_choices())
 
-        self.assertEqual(result, 255)
+        self.assertEqual(255, result)
 
     def test_calculate_max_length_returns_max_length_from_kwargs_more_than_255(self):
         field = EnumChoiceField(enum_class=CharTestEnum)
 
         result = field._calculate_max_length(max_length=256, choices=field.build_choices())
 
-        self.assertEqual(result, 256)
+        self.assertEqual(255, result)
 
-    def test_raises_exception_when_enum_class_is_not_enumeration(self):
+    def test_field_raises_exception_when_enum_class_is_not_enumeration(self):
         class FailingEnum:
             FOO = 'foo'
             BAR = 'bar'

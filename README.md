@@ -1,4 +1,7 @@
 # django-enum-choices
+
+**Library is still work in progress & unstable. When officially launched, we'll announce it.**
+
 A custom Django field able to use subclasses of Python's internal `Enum` class as choices
 
 ## Installation

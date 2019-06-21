@@ -1,6 +1,7 @@
 from enum import Enum
 
 from django.test import TestCase
+from django.core import serializers
 
 from django_enum_choices.fields import EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
@@ -284,3 +285,28 @@ class ModelIntegrationTests(TestCase):
 
         self.assertIn(second, second_qs)
         self.assertNotIn(first, second_qs)
+
+    def test_serialization(self):
+        IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.FIRST
+        )
+
+        data = serializers.serialize('json', IntegerEnumeratedModel.objects.all())
+
+        expected = '[{"model": "testapp.integerenumeratedmodel", "pk": 1, "fields": {"enumeration": "1"}}]'
+
+        self.assertEqual(expected, data)
+
+    def test_deserialization(self):
+        instance = IntegerEnumeratedModel.objects.create(
+            enumeration=IntTestEnum.FIRST
+        )
+
+        data = serializers.serialize('json', IntegerEnumeratedModel.objects.all())
+        objects = list(serializers.deserialize('json', data))
+
+        self.assertEqual(1, len(objects))
+
+        deserialized_instance = objects[0]
+
+        self.assertEqual(instance, deserialized_instance.object)

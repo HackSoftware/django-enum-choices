@@ -69,14 +69,11 @@ class EnumChoiceField(CharField):
             f'Value {value} not found in {self.enum_class}'
         )
 
-    def to_db_value(self, value):
+    def get_prep_value(self, value):
         if value is None:
             return
 
         return str(value.value)
-
-    def get_prep_value(self, value):
-        return self.to_db_value(value)
 
     def from_db_value(self, value, expression, connection):
         return self.to_enum_value(value)

@@ -104,7 +104,7 @@ class EnumChoiceFieldTests(TestCase):
 
         result = field._calculate_max_length(max_length=256, choices=field.build_choices())
 
-        self.assertEqual(255, result)
+        self.assertEqual(256, result)
 
     def test_field_raises_exception_when_enum_class_is_not_enumeration(self):
         class FailingEnum:
@@ -158,6 +158,20 @@ class EnumChoiceFieldTests(TestCase):
         with self.assertRaises(EnumChoiceFieldException):
             instance.from_db_value(7, None, None)
 
+    def test_deconstruct_behaves_as_expected(self):
+        """
+        Idea taken from:
+        https://docs.djangoproject.com/en/2.2/howto/custom-model-fields/#field-deconstruction
+        """
+        instance = EnumChoiceField(enum_class=IntTestEnum)
+        name, path, args, kwargs = instance.deconstruct()
+
+        new_instance = EnumChoiceField(*args, **kwargs)
+
+        self.assertEqual(instance.enum_class, new_instance.enum_class)
+        self.assertEqual(instance.choices, new_instance.choices)
+        self.assertEqual(instance.max_length, new_instance.max_length)
+
     def test_get_readable_should_be_a_callable(self):
         class TestEnum(Enum):
             A = 1
@@ -174,7 +188,7 @@ class EnumChoiceFieldTests(TestCase):
 
         self.assertEqual(expected_choices, instance.choices)
 
-    def test_get_readable_value_is_used(self):
+    def test_get_readable_value_is_used_when_callable(self):
         class TestEnum(Enum):
             A = 1
             B = 2

@@ -2,11 +2,17 @@ from enum import Enum
 
 from django.test import TestCase
 from django.core import serializers
+from django.core.exceptions import ValidationError
 
 from django_enum_choices.fields import EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
 from .testapp.enumerations import CharTestEnum, IntTestEnum
-from .testapp.models import IntegerEnumeratedModel, StringEnumeratedModel
+from .testapp.models import (
+    IntegerEnumeratedModel,
+    StringEnumeratedModel,
+    NullableEnumeratedModel,
+    BlankNullableEnumeratedModel
+)
 
 
 class EnumChoiceFieldTests(TestCase):
@@ -67,45 +73,42 @@ class EnumChoiceFieldTests(TestCase):
             field.choices,
         )
 
-    def test_calculate_max_length_returns_longest_choice_length_if_max_length_not_in_kwargs_and_longer_than_255(
-        self
+    def test_calculate_max_length_returns_from_kwargs_if_provided_and_max_choice_length_is_less_than_provided(
+            self
     ):
-        class LongStringEnum(Enum):
+        class TestEnum(Enum):
             FOO = 'foo'
-            BAR = 'A' * 256
+            BAR = 'A' * 100
 
-        field = EnumChoiceField(enum_class=LongStringEnum)
+        field = EnumChoiceField(enum_class=TestEnum)
+
+        result = field._calculate_max_length(choices=field.build_choices(), max_length=150)
+
+        self.assertEqual(150, result)
+
+    def test_calculate_max_length_returns_longest_choice_length_if_length_not_provided_in_kwargs(self):
+        class TestEnum(Enum):
+            FOO = 'foo'
+            BAR = 'A' * 100
+
+        field = EnumChoiceField(enum_class=TestEnum)
 
         result = field._calculate_max_length(choices=field.build_choices())
 
-        self.assertEqual(256, result)
+        self.assertEqual(100, result)
 
-    def test_calculate_max_length_returns_255_when_longest_choice_is_less_than_255_and_max_length_not_in_kwargs(
+    def test_calculate_max_length_returns_max_choice_length_if_length_provided_in_kwargs_and_less_than_longest_choice(
         self
     ):
-        class ShortStringEnum(Enum):
+        class TestEnum(Enum):
             FOO = 'foo'
-            BAR = 'bar'
+            BAR = 'A' * 100
 
-        field = EnumChoiceField(enum_class=ShortStringEnum)
+        field = EnumChoiceField(enum_class=TestEnum)
 
-        result = field._calculate_max_length(choices=field.build_choices())
+        result = field._calculate_max_length(choices=field.build_choices(), max_length=10)
 
-        self.assertEqual(255, result)
-
-    def test_calculate_max_length_returns_255_when_max_length_in_kwargs_and_less_than_255(self):
-        field = EnumChoiceField(enum_class=CharTestEnum)
-
-        result = field._calculate_max_length(max_length=50, choices=field.build_choices())
-
-        self.assertEqual(255, result)
-
-    def test_calculate_max_length_returns_max_length_from_kwargs_more_than_255(self):
-        field = EnumChoiceField(enum_class=CharTestEnum)
-
-        result = field._calculate_max_length(max_length=256, choices=field.build_choices())
-
-        self.assertEqual(256, result)
+        self.assertEqual(100, result)
 
     def test_field_raises_exception_when_enum_class_is_not_enumeration(self):
         class FailingEnum:
@@ -210,6 +213,36 @@ class EnumChoiceFieldTests(TestCase):
 
         self.assertEqual(expected_choices, instance.choices)
 
+    def test_to_python_returns_enum_when_called_with_enum_value(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.to_python(CharTestEnum.FIRST)
+
+        self.assertEqual(CharTestEnum.FIRST, result)
+
+    def test_to_python_returns_enum_when_called_with_primitive_value(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.to_python('first')
+
+        self.assertEqual(CharTestEnum.FIRST, result)
+
+    def test_to_python_returns_none_when_called_with_none(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.to_python(None)
+
+        self.assertIsNone(result)
+
+    def test_to_python_raises_exception_when_called_with_value_outside_enum_class(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        with self.assertRaisesMessage(
+            EnumChoiceFieldException,
+            f'Value NOT_EXISTING not found in {str(CharTestEnum)}'
+        ):
+            instance.to_python('NOT_EXISTING')
+
 
 class ModelIntegrationTests(TestCase):
     def test_can_create_object_with_char_base(self):
@@ -310,3 +343,35 @@ class ModelIntegrationTests(TestCase):
         deserialized_instance = objects[0]
 
         self.assertEqual(instance, deserialized_instance.object)
+
+    def test_object_with_nullable_field_can_be_created(self):
+        instance = NullableEnumeratedModel()
+
+        self.assertIsNone(instance.enumeration)
+
+    def test_nullable_field_can_be_set_to_none(self):
+        instance = NullableEnumeratedModel(
+            enumeration=CharTestEnum.FIRST
+        )
+
+        instance.enumeration = None
+        instance.save()
+        instance.refresh_from_db()
+
+        self.assertIsNone(instance.enumeration)
+
+    def test_non_blank_field_raises_error_on_clean(self):
+        instance = NullableEnumeratedModel()
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            str(EnumChoiceField.default_error_messages['blank'])
+        ):
+            instance.full_clean()
+
+    def test_blank_field_does_not_raise_error_on_clean(self):
+        instance = BlankNullableEnumeratedModel()
+
+        instance.full_clean()
+
+        self.assertIsNone(instance.enumeration)

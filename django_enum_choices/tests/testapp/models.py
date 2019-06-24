@@ -11,3 +11,18 @@ class IntegerEnumeratedModel(models.Model):
 
 class StringEnumeratedModel(models.Model):
     enumeration = EnumChoiceField(enum_class=CharTestEnum)
+
+
+class NullableEnumeratedModel(models.Model):
+    enumeration = EnumChoiceField(
+        enum_class=CharTestEnum,
+        null=True
+    )
+
+
+class BlankNullableEnumeratedModel(models.Model):
+    enumeration = EnumChoiceField(
+        enum_class=CharTestEnum,
+        blank=True,
+        null=True
+    )

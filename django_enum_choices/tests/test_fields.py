@@ -216,6 +216,36 @@ class EnumChoiceFieldTests(TestCase):
 
         self.assertEqual(expected_choices, instance.choices)
 
+    def test_to_python_returns_enum_when_called_with_enum_value(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.to_python(CharTestEnum.FIRST)
+
+        self.assertEqual(CharTestEnum.FIRST, result)
+
+    def test_to_python_returns_enum_when_called_with_primitive_value(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.to_python('first')
+
+        self.assertEqual(CharTestEnum.FIRST, result)
+
+    def test_to_python_returns_none_when_called_with_none(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.to_python(None)
+
+        self.assertIsNone(result)
+
+    def test_to_python_raises_exception_when_called_with_value_outside_enum_class(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        with self.assertRaisesMessage(
+            EnumChoiceFieldException,
+            f'Value NOT_EXISTING not found in {str(CharTestEnum)}'
+        ):
+            instance.to_python('NOT_EXISTING')
+
 
 class ModelIntegrationTests(TestCase):
     def test_can_create_object_with_char_base(self):

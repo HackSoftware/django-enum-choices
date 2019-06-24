@@ -2,11 +2,17 @@ from enum import Enum
 
 from django.test import TestCase
 from django.core import serializers
+from django.core.exceptions import ValidationError
 
 from django_enum_choices.fields import EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
 from .testapp.enumerations import CharTestEnum, IntTestEnum
-from .testapp.models import IntegerEnumeratedModel, StringEnumeratedModel
+from .testapp.models import (
+    IntegerEnumeratedModel,
+    StringEnumeratedModel,
+    NullableEnumeratedModel,
+    BlankNullableEnumeratedModel
+)
 
 
 class EnumChoiceFieldTests(TestCase):
@@ -310,3 +316,35 @@ class ModelIntegrationTests(TestCase):
         deserialized_instance = objects[0]
 
         self.assertEqual(instance, deserialized_instance.object)
+
+    def test_object_with_nullable_field_can_be_created(self):
+        instance = NullableEnumeratedModel()
+
+        self.assertIsNone(instance.enumeration)
+
+    def test_nullable_field_can_be_set_to_none(self):
+        instance = NullableEnumeratedModel(
+            enumeration=CharTestEnum.FIRST
+        )
+
+        instance.enumeration = None
+        instance.save()
+        instance.refresh_from_db()
+
+        self.assertIsNone(instance.enumeration)
+
+    def test_non_blank_field_raises_error_on_clean(self):
+        instance = NullableEnumeratedModel()
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            str(EnumChoiceField.default_error_messages['blank'])
+        ):
+            instance.full_clean()
+
+    def test_blank_field_does_not_raise_error_on_clean(self):
+        instance = BlankNullableEnumeratedModel()
+
+        instance.full_clean()
+
+        self.assertIsNone(instance.enumeration)

@@ -3,7 +3,7 @@ from django.test import TestCase
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 
-from django_enum_choices.serializers import EnumChoiceField
+from django_enum_choices.serializers import EnumChoiceField, EnumChoiceModelSerializerMixin
 from .testapp.models import StringEnumeratedModel
 from .testapp.enumerations import IntTestEnum, CharTestEnum
 
@@ -94,3 +94,17 @@ class ModelSerializerIntegrationTests(TestCase):
         result = serializer.validated_data['enumeration']
 
         self.assertEqual(result, CharTestEnum.FIRST)
+
+    def test_field_is_serialized_correctly_when_using_serializer_mixin(self):
+        class Serializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
+            class Meta:
+                model = StringEnumeratedModel
+                fields = ('enumeration', )
+
+        instance = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+        serializer = Serializer(instance)
+        result = serializer.data['enumeration']
+
+        self.assertEqual('first', result)

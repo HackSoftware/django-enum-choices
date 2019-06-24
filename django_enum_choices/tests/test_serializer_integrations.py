@@ -196,3 +196,14 @@ class ModelSerializerIntegrationTests(TestCase):
         serializer = Serializer(data={'enumeration': None})
 
         self.assertTrue(serializer.is_valid())
+
+    def test_initialization_with_many_initializes_list_field(self):
+        class Serializer(serializers.Serializer):
+            enumeration = EnumChoiceField(enum_class=CharTestEnum, many=True)
+
+        serializer = Serializer(data={})
+
+        self.assertIsInstance(
+            serializer.get_fields()['enumeration'],
+            serializers.ListField
+        )

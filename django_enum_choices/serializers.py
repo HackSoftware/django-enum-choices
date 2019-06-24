@@ -13,6 +13,31 @@ class EnumChoiceField(serializers.Field):
         'non_existent_key': NO_KEY_MSG
     }
 
+    def __new__(cls, *args, **kwargs):
+        if kwargs.pop('many', False):
+            return cls.many_init(*args, **kwargs)
+
+        return super().__new__(cls, *args, **kwargs)
+
+    @classmethod
+    def many_init(cls, *args, **kwargs):
+        allow_empty = kwargs.pop('allow_empty', None)
+        child_serializer = cls(*args, **kwargs)
+
+        list_kwargs = {
+            'child': child_serializer,
+        }
+
+        if allow_empty is not None:
+            list_kwargs['allow_empty'] = allow_empty
+
+        list_kwargs.update({
+            key: value for key, value in kwargs.items()
+            if key in serializers.LIST_SERIALIZER_KWARGS
+        })
+
+        return serializers.ListField(*args, **list_kwargs)
+
     def __init__(self, enum_class, **kwargs):
         super().__init__(**kwargs)
         self.enum_class = enum_class

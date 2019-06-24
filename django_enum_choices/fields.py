@@ -47,13 +47,10 @@ class EnumChoiceField(CharField):
 
     def _calculate_max_length(self, **kwargs) -> int:
         max_length = kwargs.get('max_length')
+        max_choice_length = max([len(choice) for choice, _ in kwargs['choices']])
 
-        if max_length is None:
-            max_length = max([len(choice) for choice, _ in kwargs['choices']])
-
-        # TODO: Do we need this? Can we just return the max length every time
-        if max_length < 255:
-            max_length = 255
+        if max_length is None or max_choice_length > max_length:
+            max_length = max_choice_length
 
         return max_length
 

@@ -73,45 +73,42 @@ class EnumChoiceFieldTests(TestCase):
             field.choices,
         )
 
-    def test_calculate_max_length_returns_longest_choice_length_if_max_length_not_in_kwargs_and_longer_than_255(
-        self
+    def test_calculate_max_length_returns_from_kwargs_if_provided_and_max_choice_length_is_less_than_provided(
+            self
     ):
-        class LongStringEnum(Enum):
+        class TestEnum(Enum):
             FOO = 'foo'
-            BAR = 'A' * 256
+            BAR = 'A' * 100
 
-        field = EnumChoiceField(enum_class=LongStringEnum)
+        field = EnumChoiceField(enum_class=TestEnum)
+
+        result = field._calculate_max_length(choices=field.build_choices(), max_length=150)
+
+        self.assertEqual(150, result)
+
+    def test_calculate_max_length_returns_longest_choice_length_if_length_not_provided_in_kwargs(self):
+        class TestEnum(Enum):
+            FOO = 'foo'
+            BAR = 'A' * 100
+
+        field = EnumChoiceField(enum_class=TestEnum)
 
         result = field._calculate_max_length(choices=field.build_choices())
 
-        self.assertEqual(256, result)
+        self.assertEqual(100, result)
 
-    def test_calculate_max_length_returns_255_when_longest_choice_is_less_than_255_and_max_length_not_in_kwargs(
+    def test_calculate_max_length_returns_max_choice_length_if_length_provided_in_kwargs_and_less_than_longest_choice(
         self
     ):
-        class ShortStringEnum(Enum):
+        class TestEnum(Enum):
             FOO = 'foo'
-            BAR = 'bar'
+            BAR = 'A' * 100
 
-        field = EnumChoiceField(enum_class=ShortStringEnum)
+        field = EnumChoiceField(enum_class=TestEnum)
 
-        result = field._calculate_max_length(choices=field.build_choices())
+        result = field._calculate_max_length(choices=field.build_choices(), max_length=10)
 
-        self.assertEqual(255, result)
-
-    def test_calculate_max_length_returns_255_when_max_length_in_kwargs_and_less_than_255(self):
-        field = EnumChoiceField(enum_class=CharTestEnum)
-
-        result = field._calculate_max_length(max_length=50, choices=field.build_choices())
-
-        self.assertEqual(255, result)
-
-    def test_calculate_max_length_returns_max_length_from_kwargs_more_than_255(self):
-        field = EnumChoiceField(enum_class=CharTestEnum)
-
-        result = field._calculate_max_length(max_length=256, choices=field.build_choices())
-
-        self.assertEqual(256, result)
+        self.assertEqual(100, result)
 
     def test_field_raises_exception_when_enum_class_is_not_enumeration(self):
         class FailingEnum:

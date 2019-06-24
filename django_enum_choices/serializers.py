@@ -5,7 +5,7 @@ from .fields import EnumChoiceField as ModelEnumChoiceField
 
 
 class EnumChoiceField(serializers.Field):
-    # TODO: `many` behaviour; `ModelSerializer` implicit conversion
+    # TODO: `many` behaviour
 
     NO_KEY_MSG = 'Key {failing_key} is not a valid {enum_class_name}'
 

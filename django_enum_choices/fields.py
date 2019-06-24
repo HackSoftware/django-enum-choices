@@ -89,10 +89,6 @@ class EnumChoiceField(CharField):
 
         return name, path, args, kwargs
 
-    def formfield(self, **kwargs):
-        # TODO: Implement
-        return super().formfield(**kwargs)
-
     def value_to_string(self, obj):
         value = self.value_from_object(obj)
         return self.get_prep_value(value)

@@ -47,7 +47,7 @@ class EnumChoiceField(CharField):
 
     def _calculate_max_length(self, **kwargs) -> int:
         max_length = kwargs.get('max_length')
-        max_choice_length = max([len(choice) for choice, _ in kwargs['choices']])
+        max_choice_length = max(len(choice) for choice, _ in kwargs['choices'])
 
         if max_length is None or max_choice_length > max_length:
             max_length = max_choice_length

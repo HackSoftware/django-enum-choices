@@ -108,3 +108,59 @@ class ModelSerializerIntegrationTests(TestCase):
         result = serializer.data['enumeration']
 
         self.assertEqual('first', result)
+
+    def test_field_is_deserialized_correctly_when_using_serializer_mixin(self):
+        class Serializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
+            class Meta:
+                model = StringEnumeratedModel
+                fields = ('enumeration', )
+
+        serializer = self.Serializer(data={'enumeration': 'first'})
+        serializer.is_valid()
+
+        result = serializer.validated_data['enumeration']
+
+        self.assertEqual(CharTestEnum.FIRST, result)
+
+    def test_instance_is_created_successfully_after_model_serializer_create(self):
+        class Serializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
+            class Meta:
+                model = StringEnumeratedModel
+                fiedls = ('enumeration', )
+
+        current_instance_count = StringEnumeratedModel.objects.count()
+
+        serializer = self.Serializer(data={'enumeration': 'first'})
+        serializer.is_valid()
+
+        instance = serializer.create(serializer.validated_data)
+
+        self.assertEqual(
+            current_instance_count + 1,
+            StringEnumeratedModel.objects.count()
+        )
+        self.assertEqual(
+            CharTestEnum.FIRST,
+            instance.enumeration
+        )
+
+    def test_instance_is_update_successfully_after_model_serializer_update(self):
+        class Serializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
+            class Meta:
+                model = StringEnumeratedModel
+                fiedls = ('enumeration', )
+
+        instance = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+
+        serializer = self.Serializer(data={'enumeration': 'second'})
+        serializer.is_valid()
+
+        serializer.update(instance, serializer.validated_data)
+        instance.refresh_from_db()
+
+        self.assertEqual(
+            CharTestEnum.SECOND,
+            instance.enumeration
+        )

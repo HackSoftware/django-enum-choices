@@ -123,3 +123,76 @@ class ModelSerializerIntegrationTests(TestCase):
             CharTestEnum.SECOND,
             instance.enumeration
         )
+
+    def test_serializer_is_not_valid_when_field_is_required_and_not_provided(self):
+        class Serializer(serializers.Serializer):
+            enumeration = EnumChoiceField(
+                enum_class=CharTestEnum
+            )
+
+        serializer = Serializer(data={})
+
+        self.assertFalse(serializer.is_valid())
+
+    def test_serializer_is_valid_when_field_is_required_and_provided(self):
+        class Serializer(serializers.Serializer):
+            enumeration = EnumChoiceField(
+                enum_class=CharTestEnum
+            )
+
+        serializer = Serializer(data={'enumeration': 'first'})
+
+        self.assertTrue(serializer.is_valid)
+
+    def test_serializer_does_not_add_field_to_validated_data_when_not_required_and_not_provided(self):
+        class Serializer(serializers.Serializer):
+            enumeration = EnumChoiceField(
+                enum_class=CharTestEnum,
+                required=False
+            )
+
+        serializer = Serializer(data={})
+        is_valid = serializer.is_valid()
+
+        self.assertTrue(is_valid)
+        self.assertNotIn(
+            'enumeration',
+            serializer.validated_data.keys()
+        )
+
+    def test_serializer_adds_field_to_validated_data_when_not_required_and_provided(self):
+        class Serializer(serializers.Serializer):
+            enumeration = EnumChoiceField(
+                enum_class=CharTestEnum,
+                required=False
+            )
+
+        serializer = Serializer(data={'enumeration': 'first'})
+        is_valid = serializer.is_valid()
+
+        self.assertTrue(is_valid)
+        self.assertIn(
+            'enumeration',
+            serializer.validated_data.keys()
+        )
+
+    def test_serializer_is_not_valid_when_field_is_not_nullable_and_value_is_none(self):
+        class Serializer(serializers.Serializer):
+            enumeration = EnumChoiceField(
+                enum_class=CharTestEnum
+            )
+
+        serializer = Serializer(data={'enumeration': None})
+
+        self.assertFalse(serializer.is_valid())
+
+    def test_serializer_is_valid_when_field_is_nullable_and_value_is_none(self):
+        class Serializer(serializers.Serializer):
+            enumeration = EnumChoiceField(
+                enum_class=CharTestEnum,
+                allow_null=True
+            )
+
+        serializer = Serializer(data={'enumeration': None})
+
+        self.assertTrue(serializer.is_valid())

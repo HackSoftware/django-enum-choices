@@ -14,7 +14,7 @@ class EnumChoiceField(CharField):
     def __init__(self, enum_class: Enum, **kwargs):
         if not (Enum in enum_class.__mro__):
             raise EnumChoiceFieldException(
-                '`enum_class` argument must be a child of `Enum`'
+                _('`enum_class` argument must be a child of `Enum`')
             )
 
         self.enum_class = enum_class
@@ -60,7 +60,7 @@ class EnumChoiceField(CharField):
                 return choice
 
         raise ValidationError(
-            f'Value {value} not found in {self.enum_class}'
+            _(f'Value {value} not found in {self.enum_class}')
         )
 
     def get_prep_value(self, value):

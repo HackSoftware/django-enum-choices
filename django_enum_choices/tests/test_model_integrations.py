@@ -144,3 +144,15 @@ class ModelIntegrationTests(TestCase):
         instance.full_clean()
 
         self.assertIsNone(instance.enumeration)
+
+    def test_non_enum_value_raises_error_on_clean(self):
+        instance = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+
+        instance.enumeration = "foo"
+
+        with self.assertRaises(
+            ValidationError
+        ):
+            instance.full_clean()

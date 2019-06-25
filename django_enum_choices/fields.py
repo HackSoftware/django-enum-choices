@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Tuple, Union
 
 from django.db.models import CharField
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
 from .exceptions import EnumChoiceFieldException
@@ -58,7 +59,7 @@ class EnumChoiceField(CharField):
             if str(choice.value) == value:
                 return choice
 
-        raise EnumChoiceFieldException(
+        raise ValidationError(
             f'Value {value} not found in {self.enum_class}'
         )
 

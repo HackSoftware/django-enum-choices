@@ -1,6 +1,7 @@
 from enum import Enum
 
 from django.test import TestCase
+from django.core.exceptions import ValidationError
 
 from django_enum_choices.fields import EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
@@ -125,7 +126,7 @@ class EnumChoiceFieldTests(TestCase):
     def test_from_db_value_raises_exception_when_int_value_not_contained_in_enum_class(self):
         instance = EnumChoiceField(enum_class=IntTestEnum)
 
-        with self.assertRaises(EnumChoiceFieldException):
+        with self.assertRaises(ValidationError):
             instance.from_db_value(7, None, None)
 
     def test_deconstruct_behaves_as_expected(self):
@@ -203,8 +204,7 @@ class EnumChoiceFieldTests(TestCase):
     def test_to_python_raises_exception_when_called_with_value_outside_enum_class(self):
         instance = EnumChoiceField(enum_class=CharTestEnum)
 
-        with self.assertRaisesMessage(
-            EnumChoiceFieldException,
-            f'Value NOT_EXISTING not found in {str(CharTestEnum)}'
+        with self.assertRaises(
+            ValidationError
         ):
             instance.to_python('NOT_EXISTING')

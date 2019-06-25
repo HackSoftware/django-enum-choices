@@ -14,5 +14,5 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -r django_enum_choices/requirements.txt
-            flake8
+            flake8 django_enum_choices/
             py.test

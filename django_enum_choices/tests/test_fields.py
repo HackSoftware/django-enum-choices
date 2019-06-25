@@ -66,34 +66,13 @@ class EnumChoiceFieldTests(TestCase):
             field.choices,
         )
 
-    def test_calculate_max_length_returns_from_kwargs_if_provided_and_max_choice_length_is_less_than_provided(
-            self
-    ):
-        class TestEnum(Enum):
-            FOO = 'foo'
-            BAR = 'A' * 100
+    def test_max_length_is_calculated_from_the_longest_element(self):
 
-        field = EnumChoiceField(enum_class=TestEnum, max_length=150)
-
-        self.assertEqual(150, field.max_length)
-
-    def test_calculate_max_length_returns_longest_choice_length_if_length_not_provided_in_kwargs(self):
         class TestEnum(Enum):
             FOO = 'foo'
             BAR = 'A' * 100
 
         field = EnumChoiceField(enum_class=TestEnum)
-
-        self.assertEqual(100, field.max_length)
-
-    def test_calculate_max_length_returns_max_choice_length_if_length_provided_in_kwargs_and_less_than_longest_choice(
-        self
-    ):
-        class TestEnum(Enum):
-            FOO = 'foo'
-            BAR = 'A' * 100
-
-        field = EnumChoiceField(enum_class=TestEnum, max_length=10)
 
         self.assertEqual(100, field.max_length)
 

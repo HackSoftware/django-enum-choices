@@ -28,7 +28,7 @@ class EnumChoiceFieldTests(TestCase):
             field.choices,
         )
 
-    def test_builder_initializes_int_choice_values(self):
+    def test_field_initializes_int_choice_values_by_stringifying_them(self):
         field = EnumChoiceField(enum_class=IntTestEnum)
 
         self.assertEqual(
@@ -47,7 +47,7 @@ class EnumChoiceFieldTests(TestCase):
             field.choices,
         )
 
-    def test_builder_initializes_arbitrary_choice_values_by_stringifying_them(self):
+    def test_field_initializes_arbitrary_object_values_by_stringifying_them(self):
         class Foo:
             def __str__(self):
                 return 'foo'
@@ -73,11 +73,9 @@ class EnumChoiceFieldTests(TestCase):
             FOO = 'foo'
             BAR = 'A' * 100
 
-        field = EnumChoiceField(enum_class=TestEnum)
+        field = EnumChoiceField(enum_class=TestEnum, max_length=150)
 
-        result = field._calculate_max_length(choices=field.build_choices(), max_length=150)
-
-        self.assertEqual(150, result)
+        self.assertEqual(150, field.max_length)
 
     def test_calculate_max_length_returns_longest_choice_length_if_length_not_provided_in_kwargs(self):
         class TestEnum(Enum):
@@ -86,9 +84,7 @@ class EnumChoiceFieldTests(TestCase):
 
         field = EnumChoiceField(enum_class=TestEnum)
 
-        result = field._calculate_max_length(choices=field.build_choices())
-
-        self.assertEqual(100, result)
+        self.assertEqual(100, field.max_length)
 
     def test_calculate_max_length_returns_max_choice_length_if_length_provided_in_kwargs_and_less_than_longest_choice(
         self
@@ -97,11 +93,9 @@ class EnumChoiceFieldTests(TestCase):
             FOO = 'foo'
             BAR = 'A' * 100
 
-        field = EnumChoiceField(enum_class=TestEnum)
+        field = EnumChoiceField(enum_class=TestEnum, max_length=10)
 
-        result = field._calculate_max_length(choices=field.build_choices(), max_length=10)
-
-        self.assertEqual(100, result)
+        self.assertEqual(100, field.max_length)
 
     def test_field_raises_exception_when_enum_class_is_not_enumeration(self):
         class FailingEnum:

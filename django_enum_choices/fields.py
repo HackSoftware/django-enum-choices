@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Tuple, Union
 
 from django.db.models import CharField
+from django.core.exceptions import ValidationError
 from django.utils.translation import gettext as _
 
 from .exceptions import EnumChoiceFieldException
@@ -46,13 +47,9 @@ class EnumChoiceField(CharField):
         return packed_choices
 
     def _calculate_max_length(self, **kwargs) -> int:
-        max_length = kwargs.get('max_length')
         max_choice_length = max(len(choice) for choice, _ in kwargs['choices'])
 
-        if max_length is None or max_choice_length > max_length:
-            max_length = max_choice_length
-
-        return max_length
+        return max_choice_length
 
     def to_enum_value(self, value):
         if value is None:
@@ -62,7 +59,7 @@ class EnumChoiceField(CharField):
             if str(choice.value) == value:
                 return choice
 
-        raise EnumChoiceFieldException(
+        raise ValidationError(
             f'Value {value} not found in {self.enum_class}'
         )
 

@@ -26,3 +26,10 @@ class BlankNullableEnumeratedModel(models.Model):
         blank=True,
         null=True
     )
+
+
+class EnumChoiceFieldWithDefaultModel(models.Model):
+    enumeration = EnumChoiceField(
+        CharTestEnum,
+        default=CharTestEnum.FIRST
+    )

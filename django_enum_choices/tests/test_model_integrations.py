@@ -9,7 +9,8 @@ from .testapp.models import (
     IntegerEnumeratedModel,
     StringEnumeratedModel,
     NullableEnumeratedModel,
-    BlankNullableEnumeratedModel
+    BlankNullableEnumeratedModel,
+    EnumChoiceFieldWithDefaultModel
 )
 
 
@@ -156,3 +157,11 @@ class ModelIntegrationTests(TestCase):
             ValidationError
         ):
             instance.full_clean()
+
+    def test_default_value_is_used(self):
+        instance = EnumChoiceFieldWithDefaultModel.objects.create()
+
+        self.assertEqual(
+            EnumChoiceFieldWithDefaultModel._meta.get_field('enumeration').default,
+            instance.enumeration
+        )

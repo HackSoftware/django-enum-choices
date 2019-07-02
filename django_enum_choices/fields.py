@@ -89,3 +89,23 @@ class EnumChoiceField(CharField):
     def value_to_string(self, obj):
         value = self.value_from_object(obj)
         return self.get_prep_value(value)
+
+    @property
+    def flatchoices(self):
+        """
+        Django admin uses `flatchoices` to generate a value under the
+        fields column in their list display. By default it calculates
+        `flatchoices` as a Tuple[Tuple[str]],
+        I.E: `(('choice1', 'choice1'), ('choice2', 'choice2'))
+        It accesses the readable value by using the actual value
+        which is an enumeration instance in our case.
+        Since that does not match inside the original `flatchoices`
+        it sets the display value to `-`.
+        """
+
+        flatchoices = super()._get_flatchoices()
+
+        return [
+            (self.enum_class(choice), readable)
+            for choice, readable in flatchoices
+        ]

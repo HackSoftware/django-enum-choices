@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 from django_enum_choices.fields import EnumChoiceField
 
@@ -32,4 +33,13 @@ class EnumChoiceFieldWithDefaultModel(models.Model):
     enumeration = EnumChoiceField(
         CharTestEnum,
         default=CharTestEnum.FIRST
+    )
+
+
+class MultipleEnumeratedModel(models.Model):
+    enumeration = ArrayField(
+        base_field=EnumChoiceField(
+            enum_class=CharTestEnum
+        ),
+        null=True
     )

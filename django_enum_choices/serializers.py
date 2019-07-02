@@ -23,8 +23,6 @@ class EnumChoiceField(serializers.Field):
         return value.value
 
     def to_internal_value(self, value):
-        # TODO: Handle extra arguments: `allow_null`, `required`, etc
-
         try:
             return self.enum_class(value)
         except ValueError:

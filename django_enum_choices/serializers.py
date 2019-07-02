@@ -1,42 +1,19 @@
+from django.utils.translation import ugettext_lazy as _
+
 from rest_framework import serializers
 from rest_framework.utils.field_mapping import get_field_kwargs
 
 from .fields import EnumChoiceField as ModelEnumChoiceField
 
+NO_KEY_MSG = _('Key {failing_key} is not a valid {enum_class_name}')
+NOT_A_LIST_MSG = _('Expected a list of items but got type "{input_type}".')
+EMPTY_MSG = _('This selection may not be empty.')
+
 
 class EnumChoiceField(serializers.Field):
-    # TODO: `many` behaviour
-
-    NO_KEY_MSG = 'Key {failing_key} is not a valid {enum_class_name}'
-
     default_error_messages = {
         'non_existent_key': NO_KEY_MSG
     }
-
-    def __new__(cls, *args, **kwargs):
-        if kwargs.pop('many', False):
-            return cls.many_init(*args, **kwargs)
-
-        return super().__new__(cls, *args, **kwargs)
-
-    @classmethod
-    def many_init(cls, *args, **kwargs):
-        allow_empty = kwargs.pop('allow_empty', None)
-        child_serializer = cls(*args, **kwargs)
-
-        list_kwargs = {
-            'child': child_serializer,
-        }
-
-        if allow_empty is not None:
-            list_kwargs['allow_empty'] = allow_empty
-
-        list_kwargs.update({
-            key: value for key, value in kwargs.items()
-            if key in serializers.LIST_SERIALIZER_KWARGS
-        })
-
-        return serializers.ListField(*args, **list_kwargs)
 
     def __init__(self, enum_class, **kwargs):
         super().__init__(**kwargs)
@@ -56,6 +33,42 @@ class EnumChoiceField(serializers.Field):
                 failing_key=value,
                 enum_class_name=self.enum_class.__name__
             )
+
+
+class MultipleEnumChoiceField(EnumChoiceField):
+    default_error_messages = {
+        'non_existent_key': NO_KEY_MSG,
+        'not_a_list': NOT_A_LIST_MSG,
+        'empty': EMPTY_MSG
+    }
+
+    def __init__(self, *args, **kwargs):
+        self.allow_empty = kwargs.pop('allow_empty', False)
+
+        super().__init__(*args, **kwargs)
+
+        self.default_error_messages = {
+            **self.default_error_messages,
+
+        }
+
+    def to_internal_value(self, data):
+        if not isinstance(data, list):
+            self.fail('not_a_list', input_type=type(data).__name__)
+
+        if not self.allow_empty and not data:
+            self.fail('empty')
+
+        return [
+            super(MultipleEnumChoiceField, self).to_internal_value(value)
+            for value in data
+        ]
+
+    def to_representation(self, data):
+        return [
+            super(MultipleEnumChoiceField, self).to_representation(value)
+            for value in data
+        ]
 
 
 class EnumChoiceModelSerializerMixin:

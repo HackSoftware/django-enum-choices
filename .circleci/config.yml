@@ -4,8 +4,23 @@ jobs:
     working_directory: ~/django-enum-choices
     docker:
       - image: circleci/python:3.6.4
+        environment:
+          DATABASE_URL: postgresql://root@localhost/test_django_enum_choices?sslmode=disable
+      - image: circleci/postgres:11.4
+        environment:
+          POSTGRES_USER: root
+          POSTGRES_DB: test_django_enum_choices
+
     steps:
       - checkout
+      - run:
+          name: install dockerize
+          command: wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && sudo tar -C /usr/local/bin -xzvf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
+          environment:
+            DOCKERIZE_VERSION: v0.3.0
+      - run:
+          name: Wait for db
+          command: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: sudo chown -R circleci:circleci /usr/local/bin
       - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
 

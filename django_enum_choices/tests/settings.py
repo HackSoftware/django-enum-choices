@@ -1,6 +1,19 @@
 from __future__ import unicode_literals
 
-DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
+import environ
+
+env = environ.Env()
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:"
+    },
+    'postgresql': env.db('DATABASE_URL', default='postgres:///django_enum_choices')
+
+}
+
+DATABASE_ROUTERS = ['tests.testapp.database_routers.DataBaseRouter']
 
 INSTALLED_APPS = [
     "django.contrib.admin",

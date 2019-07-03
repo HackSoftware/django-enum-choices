@@ -1,14 +1,16 @@
+from django.utils.translation import ugettext_lazy as _
+
 from rest_framework import serializers
 from rest_framework.utils.field_mapping import get_field_kwargs
 
 from .fields import EnumChoiceField as ModelEnumChoiceField
 
+NO_KEY_MSG = _('Key {failing_key} is not a valid {enum_class_name}')
+NOT_A_LIST_MSG = _('Expected a list of items but got type "{input_type}".')
+EMPTY_MSG = _('This selection may not be empty.')
+
 
 class EnumChoiceField(serializers.Field):
-    # TODO: `many` behaviour
-
-    NO_KEY_MSG = 'Key {failing_key} is not a valid {enum_class_name}'
-
     default_error_messages = {
         'non_existent_key': NO_KEY_MSG
     }
@@ -21,8 +23,6 @@ class EnumChoiceField(serializers.Field):
         return value.value
 
     def to_internal_value(self, value):
-        # TODO: Handle extra arguments: `allow_null`, `required`, etc
-
         try:
             return self.enum_class(value)
         except ValueError:
@@ -31,6 +31,42 @@ class EnumChoiceField(serializers.Field):
                 failing_key=value,
                 enum_class_name=self.enum_class.__name__
             )
+
+
+class MultipleEnumChoiceField(EnumChoiceField):
+    default_error_messages = {
+        'non_existent_key': NO_KEY_MSG,
+        'not_a_list': NOT_A_LIST_MSG,
+        'empty': EMPTY_MSG
+    }
+
+    def __init__(self, *args, **kwargs):
+        self.allow_empty = kwargs.pop('allow_empty', False)
+
+        super().__init__(*args, **kwargs)
+
+        self.default_error_messages = {
+            **self.default_error_messages,
+
+        }
+
+    def to_internal_value(self, data):
+        if not isinstance(data, list):
+            self.fail('not_a_list', input_type=type(data).__name__)
+
+        if not self.allow_empty and not data:
+            self.fail('empty')
+
+        return [
+            super(MultipleEnumChoiceField, self).to_internal_value(value)
+            for value in data
+        ]
+
+    def to_representation(self, data):
+        return [
+            super(MultipleEnumChoiceField, self).to_representation(value)
+            for value in data
+        ]
 
 
 class EnumChoiceModelSerializerMixin:

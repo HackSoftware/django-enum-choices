@@ -46,5 +46,5 @@ class ImplicitMultipleMyModelSerializer(
     serializers.ModelSerializer
 ):
     class Meta:
-        MyModelMultiple
+        model = MyModelMultiple
         fields = ('enumerated_field', )

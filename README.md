@@ -279,8 +279,18 @@ This will result in the following:
 * `SomeModel.enumerated_field.choices == (('1', '1'), ('2', '2'))`
 
 ## Development
+**Prerequisites**
+* SQLite3
+* PostgreSQL server
+* Python >= 3.5 virtual environment
 
 ```bash
 git clone https://github.com/HackSoftware/django-enum-choices.git
-pip install -e some-directory/django_enum_choices
+cd django_enum_choices
+pip install -r django_enum_choices/requirements.txt
+```
+
+Linting and running the tests:
+```bash
+tox
 ```

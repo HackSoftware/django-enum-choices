@@ -212,6 +212,22 @@ serializer.save()
 The `EnumChoiceModelSerializerMixin` does not need to be used if `enumerated_field` is defined on the serializer class explicitly.
 
 
+## Cusomizing readable values
+If a `get_readable_value` method is provided `django_enum_choices` will use it to produce the readable values that are written in the database:
+
+```python
+class CustomReadableValueEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+    @classmethod
+    def get_readable_value(cls, choice):
+        return cls(choice).value.upper()
+```
+
+Using the above class as an `enum_class` argument to `django_enum_choices.fields.EnumChoiceField` will produce the choices for the database as `(('a', 'A'), ('b', 'B'))`
+
+
 ## Implementation details
 
 * `EnumChoiceField` is a subclass of `CharField`.
@@ -228,22 +244,39 @@ class Value:
         self.value = value
 
     def __str__(self):
-        return str(self.value)
+        return self.value
 
 
-class Enumeration(Enum):
+class CustomObjectEnum(Enum):
     A = Value(1)
-    B = Value('foo')
+    B = Value('B')
 
 
 class SomeModel(models.Model):
-    enumeration = EnumChoiceField(Enumeration)
+    enumerated_field = EnumChoiceField(enum_class=CustomObjectEnum)
 ```
 
 We'll have the following:
 
-* `SomeModel.enumeration.choices == (('1', '1'), ('foo', 'foo'))`
-* `SomeModel.enumeration.max_length == 3`
+* `SomeModel.enumerated_field.choices == (('1', '1'), ('B', 'B'))`
+* `SomeModel.enumerated_field.max_length == 3`
+
+## Using Python's `enum.auto`
+`enum.auto` can be used for shorthand enumeration definitions:
+
+```python
+from enum import Enum, auto
+
+class AutoEnum(Enum):
+    A = auto()  # 1
+    B = auto()  # 2
+
+class SomeModel(models.Model):
+    enumerated_field = EnumChoiceField(enum_class=Enum)
+```
+
+This will result in the following:
+* `SomeModel.enumerated_field.choices == (('1', '1'), ('2', '2'))`
 
 ## Development
 

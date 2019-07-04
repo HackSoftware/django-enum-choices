@@ -12,8 +12,9 @@ class CustomReadableValueEnum(Enum):
     A = 'a'
     B = 'b'
 
-    def get_readable_value(self, choice):
-        return CustomReadableValueEnum(choice).upper()
+    @classmethod
+    def get_readable_value(cls, choice):
+        return cls(choice).value.upper()
 
 
 # Enum with custom objects as values

@@ -46,11 +46,11 @@ class ModelIntegrationTests(TestCase):
         first_qs = StringEnumeratedModel.objects.filter(enumeration=CharTestEnum.FIRST)
         second_qs = StringEnumeratedModel.objects.filter(enumeration=CharTestEnum.SECOND)
 
-        self.assertIn(first, first_qs)
-        self.assertNotIn(second, first_qs)
+        self.assertIn(first, list(first_qs))
+        self.assertNotIn(second, list(first_qs))
 
-        self.assertIn(second, second_qs)
-        self.assertNotIn(first, second_qs)
+        self.assertIn(second, list(second_qs))
+        self.assertNotIn(first, list(second_qs))
 
     def test_can_create_object_with_int_base(self):
         instance = IntegerEnumeratedModel.objects.create(
@@ -83,11 +83,11 @@ class ModelIntegrationTests(TestCase):
         first_qs = IntegerEnumeratedModel.objects.filter(enumeration=IntTestEnum.FIRST)
         second_qs = IntegerEnumeratedModel.objects.filter(enumeration=IntTestEnum.SECOND)
 
-        self.assertIn(first, first_qs)
-        self.assertNotIn(second, first_qs)
+        self.assertIn(first, list(first_qs))
+        self.assertNotIn(second, list(first_qs))
 
-        self.assertIn(second, second_qs)
-        self.assertNotIn(first, second_qs)
+        self.assertIn(second, list(second_qs))
+        self.assertNotIn(first, list(second_qs))
 
     def test_serialization(self):
         IntegerEnumeratedModel.objects.create(

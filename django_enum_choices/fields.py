@@ -69,7 +69,7 @@ class EnumChoiceField(CharField):
 
         return str(value.value)
 
-    def from_db_value(self, value, expression, connection):
+    def from_db_value(self, value, expression, connection, *args):
         return self.to_enum_value(value)
 
     def to_python(self, value):

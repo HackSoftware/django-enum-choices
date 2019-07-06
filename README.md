@@ -40,7 +40,7 @@ class MyEnum(Enum):
 
 
 class MyModel(models.Model):
-    enumerated_field = EnumChoiceField(enum_class=MyEnum)
+    enumerated_field = EnumChoiceField(MyEnum)
 ```
 
 **Model creation**
@@ -78,7 +78,7 @@ class MyEnum(Enum):
 
 class MyModelMultiple(models.Model):
     enumerated_field = ArrayField(
-        base_field=EnumChoiceField(enum_class=MyEnum)
+        base_field=EnumChoiceField(MyEnum)
     )
 ```
 
@@ -105,7 +105,7 @@ from rest_framework import serializers
 from django_enum_choices.serializers import EnumChoiceField
 
 class MySerializer(serializers.Serializer):
-    enumerated_field = EnumChoiceField(enum_class=MyEnum)
+    enumerated_field = EnumChoiceField(MyEnum)
 
 # Serialization:
 serializer = MySerializer({
@@ -129,7 +129,7 @@ from rest_framework import serializers
 from django_enum_choices.serializers import EnumChoiceField
 
 class MyModelSerializer(serializers.ModelSerializer):
-    enumerated_field = EnumChoiceField(enum_class=MyEnum)
+    enumerated_field = EnumChoiceField(MyEnum)
 
     class Meta:
         model = MyModel
@@ -183,7 +183,7 @@ from rest_framework import serializers
 from django_enum_choices.serializers import MultipleEnumChoiceField
 
 class MultipleMySerializer(serializers.Serializer):
-    enumerated_field = MultipleEnumChoiceField(enum_class=MyEnum)
+    enumerated_field = MultipleEnumChoiceField(MyEnum)
 
 # Serialization:
 serializer = MultipleMySerializer({
@@ -267,7 +267,7 @@ class CustomObjectEnum(Enum):
 
 
 class SomeModel(models.Model):
-    enumerated_field = EnumChoiceField(enum_class=CustomObjectEnum)
+    enumerated_field = EnumChoiceField(CustomObjectEnum)
 ```
 
 We'll have the following:
@@ -286,7 +286,7 @@ class AutoEnum(Enum):
     B = auto()  # 2
 
 class SomeModel(models.Model):
-    enumerated_field = EnumChoiceField(enum_class=Enum)
+    enumerated_field = EnumChoiceField(Enum)
 ```
 
 This will result in the following:

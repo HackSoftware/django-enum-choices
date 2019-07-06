@@ -13,12 +13,12 @@ from .models import MyModel, MyModelMultiple
 
 # Standard Serializer
 class MySerializer(serializers.Serializer):
-    enumerated_field = EnumChoiceField(enum_class=MyEnum)
+    enumerated_field = EnumChoiceField(MyEnum)
 
 
 # Model Serializer
 class MyModelSerializer(serializers.ModelSerializer):
-    enumerated_field = EnumChoiceField(enum_class=MyEnum)
+    enumerated_field = EnumChoiceField(MyEnum)
 
     class Meta:
         model = MyModel
@@ -37,7 +37,7 @@ class ImplicitMyModelSerializer(
 
 # Multiple Standard Serializer
 class MultipleMySerializer(serializers.Serializer):
-    enumerated_field = MultipleEnumChoiceField(enum_class=MyEnum)
+    enumerated_field = MultipleEnumChoiceField(MyEnum)
 
 
 # Multiple Model Serializer without field declaration

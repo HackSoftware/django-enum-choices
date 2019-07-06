@@ -4,24 +4,24 @@
 
 A custom Django choice field to use with [Python enums.](https://docs.python.org/3/library/enum.html)
 
-## Table of Contents
+[![PyPI version](https://badge.fury.io/py/django-enum-choices.svg)](https://badge.fury.io/py/django-enum-choices)
 
-- [django-enum-choices](#django-enum-choices)
-  - [Installation](#installation)
-  - [Basic Usage](#basic-usage)
-  - [Postgres ArrayField Usage](#postgres-arrayfield-usage)
-  - [Usage with Django Rest Framework](#usage-with-django-rest-framework)
-    - [Caveat](#caveat)
-  - [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
-  - [Cusomizing readable values](#cusomizing-readable-values)
-  - [Implementation details](#implementation-details)
-  - [Using Python's `enum.auto`](#using-pythons-enumauto)
-  - [Development](#development)
+## Table of Contents
+- [Installation](#installation)
+- [Basic Usage](#basic-usage)
+- [Postgres ArrayField Usage](#postgres-arrayfield-usage)
+- [Usage with Django Rest Framework](#usage-with-django-rest-framework)
+  - [Caveat](#caveat)
+- [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
+- [Cusomizing readable values](#cusomizing-readable-values)
+- [Implementation details](#implementation-details)
+- [Using Python's `enum.auto`](#using-pythons-enumauto)
+- [Development](#development)
 
 ## Installation
 
 ```bash
-pip install django_enum_choices
+pip install django-enum-choices
 ```
 
 ## Basic Usage

@@ -35,3 +35,16 @@ class CustomObjectEnum(Enum):
 class AutoEnum(Enum):
     A = auto()  # 1
     B = auto()  # 2
+
+
+class CustomAutoEnumValueGenerator(Enum):
+    def _generate_next_value_(name, start, count, last_values):
+        return {
+            'A': 'foo',
+            'B': 'bar'
+        }[name]
+
+
+class CustomAutoEnum(CustomAutoEnumValueGenerator):
+    A = auto()
+    B = auto()

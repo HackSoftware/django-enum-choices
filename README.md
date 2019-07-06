@@ -293,6 +293,26 @@ class SomeModel(models.Model):
 This will result in the following:
 * `SomeModel.enumerated_field.choices == (('1', '1'), ('2', '2'))`
 
+**Overridinng `auto` behaviour**
+Custom values for enumerations, created by `auto`, can be defined by
+subclassing an `Enum` that defines `_generate_next_value_`:
+
+```python
+class CustomAutoEnumValueGenerator(Enum):
+    def _generate_next_value_(name, start, count, last_values):
+        return {
+            'A': 'foo',
+            'B': 'bar'
+        }[name]
+
+
+class CustomAutoEnum(CustomAutoEnumValueGenerator):
+    A = auto()
+    B = auto()
+```
+
+The above will assign the values mapped in the dictionary as values to attributes in `CustomAutoEnum`.
+
 ## Development
 **Prerequisites**
 * SQLite3

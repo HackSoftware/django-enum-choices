@@ -13,7 +13,7 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
 - [Usage with Django Rest Framework](#usage-with-django-rest-framework)
   - [Caveat](#caveat)
 - [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
-- [Cusomizing readable values](#cusomizing-readable-values)
+- [Customizing readable values](#customizing-readable-values)
 - [Implementation details](#implementation-details)
 - [Using Python's `enum.auto`](#using-pythons-enumauto)
 - [Development](#development)
@@ -226,8 +226,9 @@ serializer.save()
 The `EnumChoiceModelSerializerMixin` does not need to be used if `enumerated_field` is defined on the serializer class explicitly.
 
 
-## Cusomizing readable values
-If a `get_readable_value` method is provided `django_enum_choices` will use it to produce the readable values that are written in the database:
+## Customizing readable values
+
+If a `get_readable_value` method is provided, `django_enum_choices` will use it to produce the readable values that are written in the database:
 
 ```python
 class CustomReadableValueEnum(Enum):

@@ -234,8 +234,9 @@ class EnumChoiceFieldTests(TestCase):
             FOO = 'foo'
             BAR = 'bar'
 
-            def get_readable_value(self):
-                return self.value.upper()
+            @classmethod
+            def get_readable_value(cls, choice):
+                return cls(choice).value.upper()
 
         instance = EnumChoiceField(enum_class=TestEnum)
 
@@ -243,7 +244,7 @@ class EnumChoiceFieldTests(TestCase):
 
         for choice, readable in result:
             self.assertEqual(
-                TestEnum(choice).get_readable_value(),
+                TestEnum.get_readable_value(choice),
                 readable
             )
 
@@ -259,14 +260,15 @@ class EnumChoiceFieldTests(TestCase):
             FOO = 'foo'
             BAR = 'bar'
 
-            def get_readable_value(self):
-                return self.value.upper()
+            @classmethod
+            def get_readable_value(cls, choice):
+                return cls(choice).value.upper()
 
         instance = EnumChoiceField(enum_class=TestEnum)
 
         result = display_for_field(TestEnum.FOO, instance, None)
 
-        self.assertEqual(TestEnum.FOO.get_readable_value(), result)
+        self.assertEqual(TestEnum.get_readable_value('foo'), result)
 
     def test_display_for_field_returns_empty_display_when_value_is_none(self):
         EMPTY_DISPLAY = 'EMPTY'

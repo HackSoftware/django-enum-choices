@@ -4,10 +4,24 @@
 
 A custom Django choice field to use with [Python enums.](https://docs.python.org/3/library/enum.html)
 
+[![PyPI version](https://badge.fury.io/py/django-enum-choices.svg)](https://badge.fury.io/py/django-enum-choices)
+
+## Table of Contents
+- [Installation](#installation)
+- [Basic Usage](#basic-usage)
+- [Postgres ArrayField Usage](#postgres-arrayfield-usage)
+- [Usage with Django Rest Framework](#usage-with-django-rest-framework)
+  - [Caveat](#caveat)
+- [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
+- [Customizing readable values](#customizing-readable-values)
+- [Implementation details](#implementation-details)
+- [Using Python's `enum.auto`](#using-pythons-enumauto)
+- [Development](#development)
+
 ## Installation
 
 ```bash
-pip install django_enum_choices
+pip install django-enum-choices
 ```
 
 ## Basic Usage
@@ -20,35 +34,94 @@ from django_enum_choices.fields import EnumChoiceField
 
 from enum import Enum
 
-class FooBarEnumeration(Enum):
-    FOO = 'foo'
-    BAR = 'bar'
+class MyEnum(Enum):
+    A = 'a'
+    B = 'b'
 
 
 class MyModel(models.Model):
-    foo_bar_field = EnumChoiceField(FooBarEnumeration)
+    enumerated_field = EnumChoiceField(MyEnum)
 ```
 
 **Model creation**
 
 ```python
-instance = MyModel.objects.create(foo_bar_field=FooBarEnumeration.BAR)
+instance = MyModel.objects.create(enumerated_field=MyEnum.A)
 ```
 
 **Changing enum values**
 
 ```python
-instance.foo_bar_field = FooBarEnumeration.FOO
+instance.enumerated_field = MyEnum.B
 instance.save()
 ```
 
 **Filtering**
 
 ```python
-MyModel.objects.filter(foo_bar_field=FooBarEnumeration.FOO)
+MyModel.objects.filter(enumerated_field=MyEnum.A)
+```
+
+## Postgres ArrayField Usage
+
+```python
+from django import models
+from django.contrib.postgres.fields import ArrayField
+
+from django_enum_choices.fields import EnumChoiceField
+
+from enum import Enum
+
+class MyEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+class MyModelMultiple(models.Model):
+    enumerated_field = ArrayField(
+        base_field=EnumChoiceField(MyEnum)
+    )
+```
+
+**Model Creation**
+
+```python
+instance = MyModelMultiple.objects.create(enumerated_field=[MyEnum.A, MyEnum.B])
+```
+
+**Changing enum values**
+
+```python
+instance.enumerated_field = [MyEnum.B]
+instance.save()
 ```
 
 ## Usage with Django Rest Framework
+
+**Using a subclass of `serializers.Serializer`**
+
+```python
+from rest_framework import serializers
+
+from django_enum_choices.serializers import EnumChoiceField
+
+class MySerializer(serializers.Serializer):
+    enumerated_field = EnumChoiceField(MyEnum)
+
+# Serialization:
+serializer = MySerializer({
+    'enumerated_field': MyEnum.A
+})
+data = serializer.data  # {'enumerated_field': 'a'}
+
+# Deserialization:
+serializer = MySerializer(data={
+    'enumerated_field': 'a'
+})
+serializer.is_valid()
+data = serializer.validated_data  # OrderedDict([('enumerated_field', <MyEnum.A: 'a'>)])
+```
+
+**Using a subclass of `serializers.ModelSerializer`**
 
 ```python
 from rest_framework import serializers
@@ -56,41 +129,119 @@ from rest_framework import serializers
 from django_enum_choices.serializers import EnumChoiceField
 
 class MyModelSerializer(serializers.ModelSerializer):
-    foo_bar_field = EnumChoiceField(FooBarEnumeration)
+    enumerated_field = EnumChoiceField(MyEnum)
 
     class Meta:
         model = MyModel
-        fields = ('foo_bar_field', )
-```
+        fields = ('enumerated_field', )
 
-In `python manage.py shell`:
+# Serialization:
+instance = MyModel.objects.create(enumerated_field=MyEnum.A)
+serializer = MyModelSerializer(instance)
+data = serializer.data  # {'enumerated_field': 'a'}
 
-```
-In [1]: instance = MyModel.objects.create(foo_bar_field=FooBarEnumeration.BAR)
-In [2]: MyModelSerializer(instance).data
-Out[2]: {'foo_bar_field': 'bar'}
+# Saving:
+serializer = MyModelSerializer(data={
+    'enumerated_field': 'a'
+})
+serializer.is_valid()
+serializer.save()
 ```
 
 ### Caveat
 
-If you don't explicitly specify the `foo_bar_field = EnumChoiceField(FooBarEnumeration)`, then you need to include the `EnumChoiceModelSerializerMixin`:
+If you don't explicitly specify the `enumerated_field = EnumChoiceField(MyEnum)`, then you need to include the `EnumChoiceModelSerializerMixin`:
 
 ```python
 from rest_framework import serializers
 
 from django_enum_choices.serializers import EnumChoiceModelSerializerMixin
 
-class MyModelSerializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
+class ImplicitMyModelSerializer(
+    EnumChoiceModelSerializerMixin,
+    serializers.ModelSerializer
+):
     class Meta:
         model = MyModel
-        fields = ('foo_bar_field', )
+        fields = ('enumerated_field', )
 ```
 
-By default `ModelSerializer.build_standard_field` coerces any field that has a model field with choices to `ChoiceField` wich returns the value directly.
+By default `ModelSerializer.build_standard_field` coerces any field that has a model field with choices to `ChoiceField` which returns the value directly.
 
 Since enum values resemble `EnumClass.ENUM_INSTANCE` they won't be able to be encoded by the `JSONEncoder` when being passed to a `Response`.
 
 That's why we need the mixin.
+
+## Serializing PostgreSQL ArrayField
+`django-enum-choices` exposes a `MultipleEnumChoiceField` that can be used for serializing arrays of enumerations.
+
+**Using a subclass of `serializers.Serializer`**
+
+```python
+from rest_framework import serializers
+
+from django_enum_choices.serializers import MultipleEnumChoiceField
+
+class MultipleMySerializer(serializers.Serializer):
+    enumerated_field = MultipleEnumChoiceField(MyEnum)
+
+# Serialization:
+serializer = MultipleMySerializer({
+    'enumerated_field': [MyEnum.A, MyEnum.B]
+})
+data = serializer.data  # {'enumerated_field': ['a', 'b']}
+
+# Deserialization:
+serializer = MultipleMySerializer(data={
+    'enumerated_field': ['a', 'b']
+})
+serializer.is_valid()
+data = serializer.validated_data  # OrderedDict([('enumerated_field', [<MyEnum.A: 'a'>, <MyEnum.B: 'b'>])])
+```
+
+**Using a subclass of `serializers.ModelSerializer`**
+
+```python
+class ImplicitMultipleMyModelSerializer(
+    EnumChoiceModelSerializerMixin,
+    serializers.ModelSerializer
+):
+    class Meta:
+        model = MyModelMultiple
+        fields = ('enumerated_field', )
+
+# Serialization:
+instance = MyModelMultiple.objects.create(enumerated_field=[MyEnum.A, MyEnum.B])
+serializer = ImplicitMultipleMyModelSerializer(instance)
+data = serializer.data  # {'enumerated_field': ['a', 'b']}
+
+# Saving:
+serializer = ImplicitMultipleMyModelSerializer(data={
+    'enumerated_field': ['a', 'b']
+})
+serializer.is_valid()
+serializer.save()
+```
+
+The `EnumChoiceModelSerializerMixin` does not need to be used if `enumerated_field` is defined on the serializer class explicitly.
+
+
+## Customizing readable values
+
+If a `get_readable_value` method is provided, `django_enum_choices` will use it to produce the readable values that are written in the database:
+
+```python
+class CustomReadableValueEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+    @classmethod
+    def get_readable_value(cls, choice):
+        return cls(choice).value.upper()
+```
+
+Using the above class as an `enum_class` argument to `django_enum_choices.fields.EnumChoiceField` will produce the choices for the database as `(('a', 'A'), ('b', 'B'))`
+
 
 ## Implementation details
 
@@ -108,26 +259,73 @@ class Value:
         self.value = value
 
     def __str__(self):
-        return str(self.value)
+        return self.value
 
 
-class Enumeration(Enum):
+class CustomObjectEnum(Enum):
     A = Value(1)
-    B = Value('foo')
+    B = Value('B')
 
 
 class SomeModel(models.Model):
-    enumeration = EnumChoiceField(Enumeration)
+    enumerated_field = EnumChoiceField(CustomObjectEnum)
 ```
 
 We'll have the following:
 
-* `SomeModel.enumeration.choices == (('1', '1'), ('foo', 'foo'))`
-* `SomeModel.enumeration.max_length == 3`
+* `SomeModel.enumerated_field.choices == (('1', '1'), ('B', 'B'))`
+* `SomeModel.enumerated_field.max_length == 3`
+
+## Using Python's `enum.auto`
+`enum.auto` can be used for shorthand enumeration definitions:
+
+```python
+from enum import Enum, auto
+
+class AutoEnum(Enum):
+    A = auto()  # 1
+    B = auto()  # 2
+
+class SomeModel(models.Model):
+    enumerated_field = EnumChoiceField(Enum)
+```
+
+This will result in the following:
+* `SomeModel.enumerated_field.choices == (('1', '1'), ('2', '2'))`
+
+**Overridinng `auto` behaviour**
+Custom values for enumerations, created by `auto`, can be defined by
+subclassing an `Enum` that defines `_generate_next_value_`:
+
+```python
+class CustomAutoEnumValueGenerator(Enum):
+    def _generate_next_value_(name, start, count, last_values):
+        return {
+            'A': 'foo',
+            'B': 'bar'
+        }[name]
+
+
+class CustomAutoEnum(CustomAutoEnumValueGenerator):
+    A = auto()
+    B = auto()
+```
+
+The above will assign the values mapped in the dictionary as values to attributes in `CustomAutoEnum`.
 
 ## Development
+**Prerequisites**
+* SQLite3
+* PostgreSQL server
+* Python >= 3.5 virtual environment
 
 ```bash
 git clone https://github.com/HackSoftware/django-enum-choices.git
-pip install -e some-directory/django_enum_choices
+cd django_enum_choices
+pip install -r django_enum_choices/requirements.txt
+```
+
+Linting and running the tests:
+```bash
+tox
 ```

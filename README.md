@@ -1,7 +1,5 @@
 # django-enum-choices
 
-**Library is still work in progress & unstable. When officially launched, we'll announce it.**
-
 A custom Django choice field to use with [Python enums.](https://docs.python.org/3/library/enum.html)
 
 [![PyPI version](https://badge.fury.io/py/django-enum-choices.svg)](https://badge.fury.io/py/django-enum-choices)
@@ -27,7 +25,7 @@ pip install django-enum-choices
 ## Basic Usage
 
 ```python
-from django import models
+from django.db import models
 
 from django_enum_choices.fields import EnumChoiceField
 
@@ -65,7 +63,7 @@ MyModel.objects.filter(enumerated_field=MyEnum.A)
 ## Postgres ArrayField Usage
 
 ```python
-from django import models
+from django.db import models
 from django.contrib.postgres.fields import ArrayField
 
 from django_enum_choices.fields import EnumChoiceField

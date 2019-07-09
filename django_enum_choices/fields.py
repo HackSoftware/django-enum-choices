@@ -3,9 +3,11 @@ from typing import Tuple, Union
 
 from django.db.models import CharField
 from django.core.exceptions import ValidationError
+from django.core.validators import MaxLengthValidator
 from django.utils.translation import gettext as _
 
 from .exceptions import EnumChoiceFieldException
+from .validators import EnumValueMaxLengthValidator
 
 
 class EnumChoiceField(CharField):
@@ -23,6 +25,14 @@ class EnumChoiceField(CharField):
         kwargs['max_length'] = self._calculate_max_length(**kwargs)
 
         super().__init__(**kwargs)
+
+        self.validators = [
+            validator for validator in self.validators
+            if not isinstance(validator, MaxLengthValidator)
+        ]
+        self.validators.append(
+            EnumValueMaxLengthValidator(kwargs['max_length'])
+        )
 
     def _pack_choices(self) -> Tuple[Tuple[Union[int, str]]]:
         return [
@@ -88,6 +98,28 @@ class EnumChoiceField(CharField):
             kwargs['enum_class'] = self.enum_class
 
         return name, path, args, kwargs
+
+    def validate(self, value, *args, **kwargs):
+        """
+        Runs standard `django.db.models.Field` validation
+        with different logic for choices validation
+        """
+
+        if not self.editable:
+            return
+
+        if value is None and not self.null:
+            raise ValidationError(self.error_messages['null'], code='null')
+
+        if not self.blank and value in self.empty_values:
+            raise ValidationError(self.error_messages['blank'], code='blank')
+
+        if value not in self.enum_class:
+            raise ValidationError(
+                self.error_messages['invalid_choice'],
+                code='invalid_choice',
+                params={'value': value}
+            )
 
     def value_to_string(self, obj):
         value = self.value_from_object(obj)

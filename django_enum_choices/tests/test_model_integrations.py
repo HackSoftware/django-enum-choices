@@ -158,6 +158,13 @@ class ModelIntegrationTests(TestCase):
         ):
             instance.full_clean()
 
+    def test_enum_value_from_enum_class_does_not_raise_error_on_clean(self):
+        instance = StringEnumeratedModel(enumeration=CharTestEnum.FIRST)
+        instance.full_clean()
+        instance.save()
+
+        self.assertIsNotNone(instance)
+
     def test_default_value_is_used(self):
         instance = EnumChoiceFieldWithDefaultModel.objects.create()
 

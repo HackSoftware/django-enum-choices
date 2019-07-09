@@ -278,3 +278,32 @@ class EnumChoiceFieldTests(TestCase):
         result = display_for_field(None, instance, EMPTY_DISPLAY)
 
         self.assertEqual(EMPTY_DISPLAY, result)
+
+    def test_validate_raises_error_when_field_is_not_null_and_value_is_none(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            str(instance.error_messages['null'])
+        ):
+            instance.validate(None)
+
+    def test_validate_raises_error_when_field_is_not_blank_and_value_is_empty(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            str(instance.error_messages['blank'])
+        ):
+            instance.validate('')
+
+    def test_validate_raises_error_when_value_is_not_from_enum_class(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        expected = instance.error_messages['invalid_choice'] % {'value': 'foo'}
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            expected
+        ):
+            instance.validate('foo')

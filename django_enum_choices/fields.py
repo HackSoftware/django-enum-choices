@@ -26,6 +26,8 @@ class EnumChoiceField(CharField):
 
         super().__init__(**kwargs)
 
+        # Removing `MaxLengthValidator` instances and adding
+        # an `EnumValueMaxLengthValidator` instance
         self.validators = [
             validator for validator in self.validators
             if not isinstance(validator, MaxLengthValidator)

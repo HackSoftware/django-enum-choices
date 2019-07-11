@@ -16,11 +16,24 @@ VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'django'
+    'Django>=1.11'
 ]
 
 # What packages are optional?
-EXTRAS = {}
+EXTRAS = {
+    'dev': [
+        'Django==2.2.3',
+        'djangorestframework==3.9.4',
+        'psycopg2==2.8.3',
+        'flake8==3.7.7',
+        'pytest==4.6.3',
+        'pytest-django==3.5.0',
+        'pytest-pythonpath==0.7.3',
+        'django-environ==0.4.5',
+        'tox==3.13.2',
+        'bumpversion==0.5.3'
+    ]
+}
 
 # The rest you shouldn't have to touch too much :)
 # ------------------------------------------------
@@ -116,7 +129,6 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Framework :: Django',
-        'Framework :: Django :: 1.10',
         'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.1',
         'Framework :: Django :: 2.2',

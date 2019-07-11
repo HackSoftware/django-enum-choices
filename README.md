@@ -320,7 +320,7 @@ The above will assign the values mapped in the dictionary as values to attribute
 ```bash
 git clone https://github.com/HackSoftware/django-enum-choices.git
 cd django_enum_choices
-pip install -r django_enum_choices/requirements.txt
+pip install -e .[dev]
 ```
 
 Linting and running the tests:

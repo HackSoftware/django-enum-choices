@@ -16,7 +16,7 @@ VERSION = None
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    'django'
+    'Django>=1.11'
 ]
 
 # What packages are optional?
@@ -129,7 +129,6 @@ setup(
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: Implementation :: CPython',
         'Framework :: Django',
-        'Framework :: Django :: 1.10',
         'Framework :: Django :: 1.11',
         'Framework :: Django :: 2.1',
         'Framework :: Django :: 2.2',

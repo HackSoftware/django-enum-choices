@@ -30,7 +30,8 @@ EXTRAS = {
         'pytest-django==3.5.0',
         'pytest-pythonpath==0.7.3',
         'django-environ==0.4.5',
-        'tox==3.13.2'
+        'tox==3.13.2',
+        'bumpversion==0.5.3'
     ]
 }
 

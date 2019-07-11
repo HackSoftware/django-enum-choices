@@ -1,0 +1,6 @@
+include LICENSE
+include pytest.ini
+include tox.ini
+recursive-include django_enum_choices *.py
+recursive-include django_enum_choices *.txt
+recursive-include examples *.py

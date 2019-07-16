@@ -9,4 +9,4 @@ class EnumValueMaxLengthValidator(MaxLengthValidator):
     """
 
     def clean(self, x):
-        return len(x.value)
+        return len(str(x.value))

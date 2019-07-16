@@ -31,7 +31,8 @@ EXTRAS = {
         'pytest-pythonpath==0.7.3',
         'django-environ==0.4.5',
         'tox==3.13.2',
-        'bumpversion==0.5.3'
+        'bumpversion==0.5.3',
+        'tox-pyenv==1.1.0'
     ]
 }
 

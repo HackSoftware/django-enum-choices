@@ -23,6 +23,10 @@ jobs:
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
       - run: sudo chown -R circleci:circleci /usr/local/bin
       - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
+
+      - restore_cache:
+          keys:
+            - python-versions-cache
       - run:
           name: Install Python versions
           command: |
@@ -30,13 +34,18 @@ jobs:
             sudo apt-get install -y make build-essential libssl-dev zlib1g-dev libbz2-dev \
             libreadline-dev libsqlite3-dev wget curl llvm libncurses5-dev libncursesw5-dev \
             xz-utils tk-dev libffi-dev liblzma-dev python-openssl git
-            curl https://pyenv.run | bash
+            [ ! -d "/home/circleci/.pyenv" ] && curl https://pyenv.run | bash
             export PATH="$HOME/.pyenv/bin:$PATH"
             eval "$(pyenv init -)"
             eval "$(pyenv virtualenv-init -)"
-            pyenv install 3.5.7
-            pyenv install 3.6.4
-            pyenv install 3.7.0
+            pyenv install 3.5.7 --skip-existing
+            pyenv install 3.6.4 --skip-existing
+            pyenv install 3.7.0 --skip-existing
+      - save_cache:
+          paths:
+            - /home/circleci/.pyenv/
+          key:
+            python-versions-cache
 
       - run:
           command: |

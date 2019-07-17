@@ -72,7 +72,7 @@ class EnumChoiceField(CharField):
                 return choice
 
         raise ValidationError(
-            _(f'Value {value} not found in {self.enum_class}')
+            _('Value {} not found in {}'.format(value, self.enum_class))
         )
 
     def get_prep_value(self, value):

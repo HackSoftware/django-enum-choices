@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Tuple
+from itertools import chain
 
 from django.db.models import CharField
 from django.core.exceptions import ValidationError
@@ -57,10 +58,22 @@ class EnumChoiceField(CharField):
         return built_choice
 
     def build_choices(self) -> Tuple[Tuple[str]]:
-        return [
+        choices = [
             self.choice_builder(choice)
             for choice in self.enum_class
         ]
+
+        if not all(
+            isinstance(value, str) for value
+            in chain.from_iterable(choices)
+        ):
+            raise EnumChoiceFieldException(
+                _('All choices generated from {} must be strings.'.format(
+                    self.enum_class.__name__
+                ))
+            )
+
+        return choices
 
     def _calculate_max_length(self, **kwargs) -> int:
         max_choice_length = max(len(choice) for choice, _ in kwargs['choices'])

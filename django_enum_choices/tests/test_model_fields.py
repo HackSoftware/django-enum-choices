@@ -352,3 +352,13 @@ class EnumChoiceFieldTests(TestCase):
             instance = EnumChoiceField(enum_class=TestEnum)
 
             instance._get_choice_builder()
+
+    def test_build_choices_raises_exception_when_not_all_values_are_strings(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+        instance.choice_builder = lambda x: (1, 1)
+
+        with self.assertRaisesMessage(
+            EnumChoiceFieldException,
+            'All choices generated from CharTestEnum must be strings.'
+        ):
+            instance.build_choices()

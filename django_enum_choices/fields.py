@@ -176,6 +176,6 @@ class EnumChoiceField(CharField):
         flatchoices = super()._get_flatchoices()
 
         return [
-            (self.enum_class(choice), readable)
+            (self.to_enum_value(choice), readable)
             for choice, readable in flatchoices
         ]

@@ -16,3 +16,14 @@ class MyModelMultiple(models.Model):
     enumerated_field = ArrayField(
         base_field=EnumChoiceField(MyEnum)
     )
+
+
+def choice_builder(choice):
+    return choice.value, choice.value.upper()
+
+
+class CustomReadableValueEnumModel(models.Model):
+    enumerated_field = EnumChoiceField(
+        MyEnum,
+        choice_builder=choice_builder
+    )

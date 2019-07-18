@@ -6,7 +6,7 @@ from django.contrib.admin.utils import display_for_field
 
 from django_enum_choices.fields import EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
-from django_enum_choices.choice_builders import value_value, as_choice_builder
+from django_enum_choices.choice_builders import value_value
 
 from .testapp.enumerations import CharTestEnum, IntTestEnum
 
@@ -144,37 +144,21 @@ class EnumChoiceFieldTests(TestCase):
         self.assertEqual(instance.enum_class, new_instance.enum_class)
         self.assertEqual(instance.choices, new_instance.choices)
         self.assertEqual(instance.max_length, new_instance.max_length)
-
-    def test_get_readable_should_be_a_callable(self):
-        class TestEnum(Enum):
-            A = 1
-            B = 2
-
-            get_readable_value = 3
-        instance = EnumChoiceField(enum_class=TestEnum)
-
-        expected_choices = [
-            ('1', '1'),
-            ('2', '2'),
-            ('3', '3')
-        ]
-
-        self.assertEqual(expected_choices, instance.choices)
+        self.assertEqual(instance._original_choice_builder, new_instance._original_choice_builder)
 
     def test_choice_builder_is_used_when_callable(self):
         class TestEnum(Enum):
             A = 1
             B = 2
 
-            @classmethod
-            def choice_builder(cls, enum_instance):
-                if enum_instance == TestEnum.A:
-                    return 1, 'A'
+        def choice_builder(enum_instance):
+            if enum_instance == TestEnum.A:
+                return 1, 'A'
 
-                if enum_instance == TestEnum.B:
-                    return 2, 'B'
+            if enum_instance == TestEnum.B:
+                return 2, 'B'
 
-        instance = EnumChoiceField(enum_class=TestEnum)
+        instance = EnumChoiceField(enum_class=TestEnum, choice_builder=choice_builder)
 
         expected_choices = [
             ('1', 'A'),
@@ -236,17 +220,16 @@ class EnumChoiceFieldTests(TestCase):
             FOO = 'foo'
             BAR = 'bar'
 
-            @classmethod
-            def choice_builder(cls, choice):
-                return cls(choice).value, cls(choice).value.upper()
+        def choice_builder(choice):
+            return choice.value, choice.value.upper()
 
-        instance = EnumChoiceField(enum_class=TestEnum)
+        instance = EnumChoiceField(enum_class=TestEnum, choice_builder=choice_builder)
 
         result = instance.flatchoices
 
         for choice, readable in result:
             self.assertEqual(
-                TestEnum.choice_builder(TestEnum(choice))[1],
+                choice_builder(TestEnum(choice))[1],
                 readable
             )
 
@@ -262,15 +245,14 @@ class EnumChoiceFieldTests(TestCase):
             FOO = 'foo'
             BAR = 'bar'
 
-            @classmethod
-            def choice_builder(cls, choice):
-                return cls(choice.value).value, cls(choice).value.upper()
+        def choice_builder(choice):
+            return choice.value, choice.value.upper()
 
-        instance = EnumChoiceField(enum_class=TestEnum)
+        instance = EnumChoiceField(enum_class=TestEnum, choice_builder=choice_builder)
 
         result = display_for_field(TestEnum.FOO, instance, None)
 
-        self.assertEqual(TestEnum.choice_builder(TestEnum.FOO)[1], result)
+        self.assertEqual(choice_builder(TestEnum.FOO)[1], result)
 
     def test_display_for_field_returns_empty_display_when_value_is_none(self):
         EMPTY_DISPLAY = 'EMPTY'
@@ -310,40 +292,12 @@ class EnumChoiceFieldTests(TestCase):
         ):
             instance.validate('foo')
 
-    def test_get_choice_builder_returns_value_value_when_choice_builder_not_defined(self):
-        instance = EnumChoiceField(enum_class=CharTestEnum)
-
-        builder = instance._get_choice_builder()
-
-        self.assertEqual(
-            builder(CharTestEnum.FIRST),
-            as_choice_builder(value_value)(CharTestEnum.FIRST)
-        )
-
-    def test_get_choice_builder_returns_custom_choice_builder_when_defined(self):
-        class TestEnum(Enum):
-            A = 1
-            B = 2
-
-            @classmethod
-            def choice_builder(cls, choice):
-                return choice.name, choice.value
-
-        instance = EnumChoiceField(enum_class=TestEnum)
-
-        builder = instance._get_choice_builder()
-
-        self.assertEqual(
-            builder(TestEnum.A),
-            as_choice_builder(TestEnum.choice_builder)(TestEnum.A)
-        )
-
     def test_get_choice_builder_raises_exception_when_choice_builder_is_not_callable(self):
         class TestEnum(Enum):
             A = 1
             B = 2
 
-            choice_builder = 'choice_builder'
+        choice_builder = 'choice_builder'
 
         with self.assertRaisesMessage(
             EnumChoiceFieldException,
@@ -351,7 +305,26 @@ class EnumChoiceFieldTests(TestCase):
         ):
             instance = EnumChoiceField(enum_class=TestEnum)
 
-            instance._get_choice_builder()
+            instance._get_choice_builder(choice_builder)
+
+    def test_value_value_is_used_when_choice_builder_is_not_provided(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        self.assertEqual(instance._original_choice_builder, value_value)
+
+    def test_custom_choice_builder_is_used_when_provided_and_callable(self):
+        def choice_builder(choice):
+            return choice.name, choice.value
+
+        instance = EnumChoiceField(
+            enum_class=CharTestEnum,
+            choice_builder=choice_builder
+        )
+
+        self.assertEqual(
+            instance._original_choice_builder,
+            choice_builder
+        )
 
     def test_build_choices_raises_exception_when_not_all_values_are_strings(self):
         instance = EnumChoiceField(enum_class=CharTestEnum)

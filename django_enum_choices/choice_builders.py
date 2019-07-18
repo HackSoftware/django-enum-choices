@@ -1,15 +1,3 @@
-def as_choice_builder(func):
-    def inner(enumeration):
-        if not enumeration:
-            return enumeration
-
-        built = func(enumeration)
-
-        return tuple(str(value) for value in built)
-
-    return inner
-
-
 def value_value(enumeration):
     return (
         enumeration.value,

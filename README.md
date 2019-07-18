@@ -11,8 +11,8 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
 - [Usage with Django Rest Framework](#usage-with-django-rest-framework)
   - [Caveat](#caveat)
 - [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
-- [Customizing readable values](#customizing-readable-values)
 - [Implementation details](#implementation-details)
+- [Customizing readable values](#customizing-readable-values)
 - [Using Python's `enum.auto`](#using-pythons-enumauto)
 - [Development](#development)
 
@@ -224,30 +224,16 @@ serializer.save()
 The `EnumChoiceModelSerializerMixin` does not need to be used if `enumerated_field` is defined on the serializer class explicitly.
 
 
-## Customizing readable values
-
-If a `get_readable_value` method is provided, `django_enum_choices` will use it to produce the readable values that are written in the database:
-
-```python
-class CustomReadableValueEnum(Enum):
-    A = 'a'
-    B = 'b'
-
-    @classmethod
-    def get_readable_value(cls, choice):
-        return cls(choice).value.upper()
-```
-
-Using the above class as an `enum_class` argument to `django_enum_choices.fields.EnumChoiceField` will produce the choices for the database as `(('a', 'A'), ('b', 'B'))`
-
-
 ## Implementation details
 
 * `EnumChoiceField` is a subclass of `CharField`.
 * Only subclasses of `Enum` are valid arguments for `EnumChoiceField`.
-* `choices` are generated from the values of the enumeration, like `(str(value), str(value))`, meaning you can put any valid Python object there.
 * `max_length`, if passed, is ignored. `max_length` is automatically calculated from the longest choice.
-
+* `choices` are generated using a special `choice_builder` function, which accepts an enumeration and returns a tuple of 2 items.
+  * Four choice builder functions are defined inside `django_enum_choices.choice_builders`
+  * By default the `value_value` choice builder is used. It produces the choices from the values in the enumeration class, like `(enumeration.value, enumeration.value)`
+  * `choice_builder` can be overriden by defining a classmethod named `choice_builder` inside the enumeration class.
+  * All values returned from the choice builder **will be cast to strings** when generating choices.
 
 For example, lets have the following case:
 
@@ -264,6 +250,7 @@ class CustomObjectEnum(Enum):
     A = Value(1)
     B = Value('B')
 
+	# The default choice builder `value_value` is being used
 
 class SomeModel(models.Model):
     enumerated_field = EnumChoiceField(CustomObjectEnum)
@@ -273,6 +260,25 @@ We'll have the following:
 
 * `SomeModel.enumerated_field.choices == (('1', '1'), ('B', 'B'))`
 * `SomeModel.enumerated_field.max_length == 3`
+
+
+## Customizing readable values
+If a `choice_builder` class method is provided inside the enumeration class, `django_enum_choices` will use it to generate the choices.
+The `choice_builder` must accept an enumeration choice and return a tuple, containing the value to be saved and the readable value:
+
+```python
+class CustomReadableValueEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+    @classmethod
+    def choice_builder(cls, choice):
+        return choice.value, choice.value.upper()
+```
+
+The values in the returned tuple will be cast to strings before being used.
+Using the above class as an `enum_class` argument to `django_enum_choices.fields.EnumChoiceField` will produce the choices for the database as `(('a', 'A'), ('b', 'B'))`
+
 
 ## Using Python's `enum.auto`
 `enum.auto` can be used for shorthand enumeration definitions:

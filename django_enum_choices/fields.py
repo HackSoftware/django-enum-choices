@@ -1,5 +1,6 @@
 from enum import Enum
-from typing import Tuple, Union
+from typing import Tuple
+from itertools import chain
 
 from django.db.models import CharField
 from django.core.exceptions import ValidationError
@@ -8,18 +9,23 @@ from django.utils.translation import gettext as _
 
 from .exceptions import EnumChoiceFieldException
 from .validators import EnumValueMaxLengthValidator
+from .choice_builders import value_value
 
 
 class EnumChoiceField(CharField):
     description = _('EnumChoiceField for %(enum_class)')
 
-    def __init__(self, enum_class: Enum, **kwargs):
+    def __init__(self, enum_class: Enum, choice_builder=value_value, **kwargs):
         if not (Enum in enum_class.__mro__):
             raise EnumChoiceFieldException(
                 _('`enum_class` argument must be a child of `Enum`')
             )
 
         self.enum_class = enum_class
+        self.choice_builder = self._get_choice_builder(choice_builder)
+
+        # Saving original for proper deconstruction
+        self._original_choice_builder = choice_builder
 
         kwargs['choices'] = self.build_choices()
         kwargs['max_length'] = self._calculate_max_length(**kwargs)
@@ -36,27 +42,51 @@ class EnumChoiceField(CharField):
             EnumValueMaxLengthValidator(kwargs['max_length'])
         )
 
-    def _pack_choices(self) -> Tuple[Tuple[Union[int, str]]]:
-        return [
-            (str(choice.value), str(choice.value))
+    @staticmethod
+    def as_choice_builder(choice_builder):
+        def inner(enumeration):
+            if not enumeration:
+                return enumeration
+
+            built = choice_builder(enumeration)
+
+            return tuple(str(value) for value in built)
+
+        return inner
+
+    def _get_choice_builder(self, choice_builder):
+        if not callable(choice_builder):
+            raise EnumChoiceFieldException(
+                _('`{}.choice_builder` must be a callable.'.format(
+                    self.enum_class.__name__
+                ))
+            )
+
+        return self.as_choice_builder(choice_builder)
+
+    def _value_from_built_choice(self, built_choice):
+        if isinstance(built_choice, tuple):
+            return built_choice[0]
+
+        return built_choice
+
+    def build_choices(self) -> Tuple[Tuple[str]]:
+        choices = [
+            self.choice_builder(choice)
             for choice in self.enum_class
         ]
 
-    def build_choices(self):
-        get_readable_value = getattr(self.enum_class, 'get_readable_value', None)
+        if not all(
+            isinstance(value, str) for value
+            in chain.from_iterable(choices)
+        ):
+            raise EnumChoiceFieldException(
+                _('All choices generated from {} must be strings.'.format(
+                    self.enum_class.__name__
+                ))
+            )
 
-        if callable(get_readable_value):
-            # Used if different readable values are wanted from the
-            # ones stored in the enum class
-            packed_choices = [(
-                str(choice.value), self.enum_class.get_readable_value(choice)
-            ) for choice in self.enum_class]
-
-            return packed_choices
-
-        packed_choices = self._pack_choices()
-
-        return packed_choices
+        return choices
 
     def _calculate_max_length(self, **kwargs) -> int:
         max_choice_length = max(len(choice) for choice, _ in kwargs['choices'])
@@ -68,7 +98,8 @@ class EnumChoiceField(CharField):
             return
 
         for choice in self.enum_class:
-            if str(choice.value) == value:
+            # Check if the value from the built choice matches the passed one
+            if self._value_from_built_choice(self.choice_builder(choice)) == value:
                 return choice
 
         raise ValidationError(
@@ -76,10 +107,9 @@ class EnumChoiceField(CharField):
         )
 
     def get_prep_value(self, value):
-        if value is None:
-            return
-
-        return str(value.value)
+        return self._value_from_built_choice(
+            self.choice_builder(value)
+        )
 
     def from_db_value(self, value, expression, connection, *args):
         # Accepting `*args` because Django 1.11 calls with an extra
@@ -98,6 +128,9 @@ class EnumChoiceField(CharField):
 
         if self.enum_class:
             kwargs['enum_class'] = self.enum_class
+
+        if self.choice_builder:
+            kwargs['choice_builder'] = self._original_choice_builder
 
         return name, path, args, kwargs
 
@@ -143,6 +176,6 @@ class EnumChoiceField(CharField):
         flatchoices = super()._get_flatchoices()
 
         return [
-            (self.enum_class(choice), readable)
+            (self.to_enum_value(choice), readable)
             for choice, readable in flatchoices
         ]

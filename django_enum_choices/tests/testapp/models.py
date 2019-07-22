@@ -6,6 +6,10 @@ from django_enum_choices.fields import EnumChoiceField
 from .enumerations import CharTestEnum, IntTestEnum
 
 
+def custom_choice_builder(choice):
+    return choice.value.upper(), choice.value
+
+
 class IntegerEnumeratedModel(models.Model):
     enumeration = EnumChoiceField(enum_class=IntTestEnum)
 
@@ -42,4 +46,11 @@ class MultipleEnumeratedModel(models.Model):
             enum_class=CharTestEnum
         ),
         null=True
+    )
+
+
+class CustomChoiceBuilderEnumeratedModel(models.Model):
+    enumeration = EnumChoiceField(
+        enum_class=CharTestEnum,
+        choice_builder=custom_choice_builder
     )

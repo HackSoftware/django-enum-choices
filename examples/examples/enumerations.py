@@ -7,16 +7,6 @@ class MyEnum(Enum):
     B = 'b'
 
 
-# Enum with custom readable values
-class CustomReadableValueEnum(Enum):
-    A = 'a'
-    B = 'b'
-
-    @classmethod
-    def get_readable_value(cls, choice):
-        return cls(choice).value.upper()
-
-
 # Enum with custom objects as values
 class Value:
     def __init__(self, value):

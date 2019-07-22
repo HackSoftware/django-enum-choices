@@ -12,7 +12,7 @@ class TestSerializerField(TestCase):
 
         result = field.to_representation(IntTestEnum.FIRST)
 
-        self.assertEqual(result, 1)
+        self.assertEqual(result, '1')
 
     def test_to_representation_returns_primitive_string_value(self):
         field = EnumChoiceField(enum_class=CharTestEnum)
@@ -34,7 +34,7 @@ class TestSerializerField(TestCase):
     def test_to_internal_value_returns_enum_value_when_value_is_int(self):
         field = EnumChoiceField(enum_class=IntTestEnum)
 
-        result = field.to_internal_value(1)
+        result = field.to_internal_value('1')
 
         self.assertEqual(result, IntTestEnum.FIRST)
 
@@ -52,7 +52,7 @@ class TestMultipleSerializerField(TestCase):
 
         result = field.to_representation([IntTestEnum.FIRST, IntTestEnum.SECOND])
 
-        self.assertEqual([1, 2], result)
+        self.assertEqual(['1', '2'], result)
 
     def test_to_representation_returns_list_of_strings(self):
         field = MultipleEnumChoiceField(enum_class=CharTestEnum)
@@ -82,7 +82,7 @@ class TestMultipleSerializerField(TestCase):
     def test_to_internal_value_returns_list_of_enums_when_value_is_list_of_ints(self):
         field = MultipleEnumChoiceField(enum_class=IntTestEnum)
 
-        result = field.to_internal_value([1, 2])
+        result = field.to_internal_value(['1', '2'])
 
         self.assertEqual([IntTestEnum.FIRST, IntTestEnum.SECOND], result)
 

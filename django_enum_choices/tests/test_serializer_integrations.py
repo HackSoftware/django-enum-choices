@@ -124,10 +124,10 @@ class MultipleEnumChoiceFieldSerializerIntegrationTests(TestCase):
     def test_multiple_field_is_deserialized_correctly(self):
         serializer = self.Serializer(
             data={
-                'enumeration': [CharTestEnum.FIRST, CharTestEnum.SECOND]
+                'enumeration': [CharTestEnum.FIRST.value, CharTestEnum.SECOND.value]
             }
         )
-        serializer.is_valid()
+        self.assertTrue(serializer.is_valid())
 
         result = serializer.validated_data['enumeration']
 
@@ -335,6 +335,28 @@ class EnumChoiceFieldModelSerializerIntegrationTests(TestCase):
             instance.enumeration
         )
 
+    def test_instance_is_created_successfully_when_using_custom_choice_builder(self):
+        class Serializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
+            class Meta:
+                model = CustomChoiceBuilderEnumeratedModel
+                fields = ('enumeration', )
+
+        current_instance_count = CustomChoiceBuilderEnumeratedModel.objects.count()
+
+        serializer = Serializer(data={'enumeration': 'FIRST'})
+        self.assertTrue(serializer.is_valid())
+
+        instance = serializer.create(serializer.validated_data)
+
+        self.assertEqual(
+            current_instance_count + 1,
+            CustomChoiceBuilderEnumeratedModel.objects.count()
+        )
+        self.assertEqual(
+            CharTestEnum.FIRST,
+            instance.enumeration
+        )
+
 
 class MultipleEnumChoiceFieldModelSerializerIntegrationTests(TestCase):
     databases = ['default', 'postgresql']
@@ -392,27 +414,5 @@ class MultipleEnumChoiceFieldModelSerializerIntegrationTests(TestCase):
 
         self.assertEqual(
             [CharTestEnum.FIRST, CharTestEnum.SECOND, CharTestEnum.THIRD],
-            instance.enumeration
-        )
-
-    def test_instance_is_created_successfully_when_using_custom_choice_builder(self):
-        class Serializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
-            class Meta:
-                model = CustomChoiceBuilderEnumeratedModel
-                fields = ('enumeration', )
-
-        current_instance_count = CustomChoiceBuilderEnumeratedModel.objects.count()
-
-        serializer = Serializer(data={'enumeration': 'first'})
-        serializer.is_valid()
-
-        instance = serializer.create(serializer.validated_data)
-
-        self.assertEqual(
-            current_instance_count + 1,
-            CustomChoiceBuilderEnumeratedModel.objects.count()
-        )
-        self.assertEqual(
-            CharTestEnum.FIRST,
             instance.enumeration
         )

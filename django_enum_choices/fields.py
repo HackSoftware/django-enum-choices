@@ -10,6 +10,7 @@ from django.utils.translation import gettext as _
 from .exceptions import EnumChoiceFieldException
 from .validators import EnumValueMaxLengthValidator
 from .choice_builders import value_value
+from .utils import as_choice_builder, value_from_built_choice
 
 
 class EnumChoiceField(CharField):
@@ -42,18 +43,6 @@ class EnumChoiceField(CharField):
             EnumValueMaxLengthValidator(kwargs['max_length'])
         )
 
-    @staticmethod
-    def as_choice_builder(choice_builder):
-        def inner(enumeration):
-            if not enumeration:
-                return enumeration
-
-            built = choice_builder(enumeration)
-
-            return tuple(str(value) for value in built)
-
-        return inner
-
     def _get_choice_builder(self, choice_builder):
         if not callable(choice_builder):
             raise EnumChoiceFieldException(
@@ -62,13 +51,7 @@ class EnumChoiceField(CharField):
                 ))
             )
 
-        return self.as_choice_builder(choice_builder)
-
-    def _value_from_built_choice(self, built_choice):
-        if isinstance(built_choice, tuple):
-            return built_choice[0]
-
-        return built_choice
+        return as_choice_builder(choice_builder)
 
     def build_choices(self) -> Tuple[Tuple[str]]:
         choices = [
@@ -99,7 +82,7 @@ class EnumChoiceField(CharField):
 
         for choice in self.enum_class:
             # Check if the value from the built choice matches the passed one
-            if self._value_from_built_choice(self.choice_builder(choice)) == value:
+            if value_from_built_choice(self.choice_builder(choice)) == value:
                 return choice
 
         raise ValidationError(
@@ -107,7 +90,7 @@ class EnumChoiceField(CharField):
         )
 
     def get_prep_value(self, value):
-        return self._value_from_built_choice(
+        return value_from_built_choice(
             self.choice_builder(value)
         )
 

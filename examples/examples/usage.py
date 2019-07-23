@@ -8,6 +8,7 @@ from .serializers import (
     ImplicitMultipleMyModelSerializer,
     CustomChoiceBuilderSerializer
 )
+from .forms import StandardEnumForm, ModelEnumForm, CustomChoiceBuilderEnumForm
 
 
 # Object Creation
@@ -138,3 +139,33 @@ def serialize_with_custom_choice_builder():
     })
 
     return serializer.data
+
+
+def get_value_from_standard_form():
+    form = StandardEnumForm({
+        'enumerated_field': 'a'
+    })
+
+    form.is_valid()
+
+    return form.cleaned_data
+
+
+def create_instance_from_model_form():
+    form = ModelEnumForm({
+        'enumerated_field': 'a'
+    })
+
+    form.is_valid()
+
+    return form.save(commit=True)
+
+
+def get_value_from_form_with_custom_choice_builder_field():
+    form = CustomChoiceBuilderEnumForm({
+        'enumerated_field': 'Custom_a'
+    })
+
+    form.is_valid()
+
+    return form.cleaned_data

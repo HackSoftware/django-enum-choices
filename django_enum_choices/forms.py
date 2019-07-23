@@ -25,7 +25,13 @@ class EnumChoiceField(forms.ChoiceField):
                 return choice
 
     def to_python(self, value):
-        return self._enum_from_input_value(value)
+        if value is None:
+            return
+
+        if value in self.empty_values:
+            return ''
+
+        return self._enum_from_input_value(value) or value
 
     def valid_value(self, value):
         return value in self.enum_class

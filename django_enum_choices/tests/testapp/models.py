@@ -7,7 +7,7 @@ from .enumerations import CharTestEnum, IntTestEnum
 
 
 def custom_choice_builder(choice):
-    return choice.value.upper(), choice.value
+    return 'Custom_' + choice.value, choice.value
 
 
 class IntegerEnumeratedModel(models.Model):

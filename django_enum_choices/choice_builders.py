@@ -1,30 +1,30 @@
 from enum import Enum
-from typing import Tuple, Any
+from typing import Tuple
 
 
-def value_value(enumeration: Enum) -> Tuple[Any, Any]:
+def value_value(enumeration: Enum) -> Tuple[str, str]:
     return (
-        enumeration.value,
-        enumeration.value
+        str(enumeration.value),
+        str(enumeration.value)
     )
 
 
 def attribute_attribute(enumeration: Enum) -> Tuple[str, str]:
     return (
-        enumeration.name,
-        enumeration.name
+        str(enumeration.name),
+        str(enumeration.name)
     )
 
 
-def attribute_value(enumeration: Enum) -> Tuple[str, Any]:
+def attribute_value(enumeration: Enum) -> Tuple[str, str]:
     return (
-        enumeration.name,
-        enumeration.value
+        str(enumeration.name),
+        str(enumeration.value)
     )
 
 
-def value_attribute(enumeration: Enum) -> Tuple[Any, str]:
+def value_attribute(enumeration: Enum) -> Tuple[str, str]:
     return (
-        enumeration.value,
-        enumeration.name
+        str(enumeration.value),
+        str(enumeration.name)
     )

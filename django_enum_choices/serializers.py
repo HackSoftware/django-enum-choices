@@ -4,6 +4,8 @@ from rest_framework import serializers
 from rest_framework.utils.field_mapping import get_field_kwargs
 
 from .fields import EnumChoiceField as ModelEnumChoiceField
+from .choice_builders import value_value
+from .utils import as_choice_builder, value_from_built_choice
 
 NO_KEY_MSG = _('Key {failing_key} is not a valid {enum_class_name}')
 NOT_A_LIST_MSG = _('Expected a list of items but got type "{input_type}".')
@@ -15,22 +17,26 @@ class EnumChoiceField(serializers.Field):
         'non_existent_key': NO_KEY_MSG
     }
 
-    def __init__(self, enum_class, **kwargs):
+    def __init__(self, enum_class, choice_builder=value_value, **kwargs):
         super().__init__(**kwargs)
         self.enum_class = enum_class
+        self.choice_builder = as_choice_builder(choice_builder)
 
     def to_representation(self, value):
-        return value.value
+        return value_from_built_choice(
+            self.choice_builder(value)
+        )
 
     def to_internal_value(self, value):
-        try:
-            return self.enum_class(value)
-        except ValueError:
-            self.fail(
-                'non_existent_key',
-                failing_key=value,
-                enum_class_name=self.enum_class.__name__
-            )
+        for choice in self.enum_class:
+            if value_from_built_choice(self.choice_builder(choice)) == value:
+                return choice
+
+        self.fail(
+            'non_existent_key',
+            failing_key=value,
+            enum_class_name=self.enum_class.__name__
+        )
 
 
 class MultipleEnumChoiceField(EnumChoiceField):
@@ -96,6 +102,7 @@ class EnumChoiceModelSerializerMixin:
 
             initial_kwargs = {
                 'enum_class': model_field.enum_class,
+                'choice_builder': model_field.choice_builder,
                 **get_field_kwargs(field_name, model_field)
             }
             finalized_kwargs = {

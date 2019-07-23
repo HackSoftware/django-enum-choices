@@ -48,3 +48,15 @@ class ImplicitMultipleMyModelSerializer(
     class Meta:
         model = MyModelMultiple
         fields = ('enumerated_field', )
+
+
+def custom_choice_builder(choice):
+    return 'Custom_' + choice.value, choice.value
+
+
+# Custom choice builder serializer
+class CustomChoiceBuilderSerializer(serializers.Serializer):
+    enumerated_field = EnumChoiceField(
+        MyEnum,
+        choice_builder=custom_choice_builder
+    )

@@ -203,6 +203,26 @@ serializer.is_valid()
 serializer.save()
 ```
 
+**Additionally, a `choice_builder` argument can be passed to the serializer field** for custom choice generation:
+```python
+def custom_choice_builder(choice):
+    return 'Custom_' + choice.value, choice.value
+
+class CustomChoiceBuilderSerializer(serializers.Serializer):
+    enumerted_field = EnumChoiceField(
+        MyEnum,
+        choice_builder=custom_choice_builder
+    )
+
+serializer = CustomChoiceBuilderSerializer({
+    'enumerated_field': MyEnum.A
+})
+
+data = serializer.data # {'enumerated_field': 'Custom_a'}
+```
+
+When using the `EnumChoiceModelSerializerMixin` with DRF's `serializers.ModelSerializer`, the `choice_builder` is automatically passed from the model field to the serializer field.
+
 ### Caveat
 
 If you don't explicitly specify the `enumerated_field = EnumChoiceField(MyEnum)`, then you need to include the `EnumChoiceModelSerializerMixin`:

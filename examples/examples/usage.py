@@ -5,7 +5,8 @@ from .serializers import (
     MyModelSerializer,
     ImplicitMyModelSerializer,
     MultipleMySerializer,
-    ImplicitMultipleMyModelSerializer
+    ImplicitMultipleMyModelSerializer,
+    CustomChoiceBuilderSerializer
 )
 
 
@@ -129,3 +130,11 @@ def create_model_from_multiple_field_serializer():
     serializer.is_valid()
 
     return serializer.save()
+
+
+def serialize_with_custom_choice_builder():
+    serializer = CustomChoiceBuilderSerializer({
+        'enumerated_field': MyEnum.A
+    })
+
+    return serializer.data

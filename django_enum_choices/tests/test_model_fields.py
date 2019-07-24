@@ -332,6 +332,7 @@ class EnumChoiceFieldTests(TestCase):
 
         with self.assertRaisesMessage(
             EnumChoiceFieldException,
-            'All choices generated from CharTestEnum must be strings.'
+            'Received type {} on key inside choice: (1, 1).\n'.format(int) +
+            'All choices generated from {} must be strings.'.format(CharTestEnum)
         ):
             instance.build_choices()

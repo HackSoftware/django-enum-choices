@@ -343,7 +343,7 @@ class EnumChoiceFieldModelSerializerIntegrationTests(TestCase):
 
         current_instance_count = CustomChoiceBuilderEnumeratedModel.objects.count()
 
-        serializer = Serializer(data={'enumeration': 'FIRST'})
+        serializer = Serializer(data={'enumeration': 'Custom_first'})
         self.assertTrue(serializer.is_valid())
 
         instance = serializer.create(serializer.validated_data)

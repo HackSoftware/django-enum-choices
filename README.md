@@ -8,6 +8,7 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
 - [Installation](#installation)
 - [Basic Usage](#basic-usage)
 - [Customizing readable values](#customizing-readable-values)
+- [Usage with forms](#usage-with-forms)
 - [Postgres ArrayField Usage](#postgres-arrayfield-usage)
 - [Usage with Django Rest Framework](#usage-with-django-rest-framework)
   - [Caveat](#caveat)
@@ -116,6 +117,69 @@ Which will result in the following choices `(('a', 'Aa'), ('b', 'Bb'))`
 
 The values in the returned from `choice_builder` tuple will be cast to strings before being used.
 
+
+## Usage with forms
+
+**Usage with `django.forms.Form`**
+
+```python
+from django_enum_choices.forms import EnumChoiceField
+
+from .enumerations import MyEnum
+
+class StandardEnumForm(forms.Form):
+    enumerated_field = EnumChoiceField(MyEnum)
+
+form = StandardEnumForm({
+    'enumerated_field': 'a'
+})
+form.is_valid()
+
+print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
+```
+
+**Usage with `django.forms.ModelForm`**
+
+```python
+from .models import MyModel
+
+class ModelEnumForm(forms.ModelForm):
+    class Meta:
+        model = MyModel
+        fields = ['enumerated_field']
+
+form = ModelEnumForm({
+    'enumerated_field': 'a'
+})
+
+form.is_valid()
+
+print(form.save(commit=True))  # <MyModel: MyModel object (12)>
+```
+
+A `choice_builder` argument can be passed to `django_model_choices.forms.EnumChoiceField`
+for usage with model fields with custom choice builders:
+
+```python
+from .enumerations import MyEnum
+
+def custom_choice_builder(choice):
+    return 'Custom_' + choice.value, choice.value
+
+class CustomChoiceBuilderEnumForm(forms.Form):
+    enumerated_field = EnumChoiceField(
+        MyEnum,
+        choice_builder=custom_choice_builder
+    )
+
+form = CustomChoiceBuilderEnumForm({
+    'enumerated_field': 'Custom_a'
+})
+
+form.is_valid()
+
+print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
+```
 
 ## Postgres ArrayField Usage
 

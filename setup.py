@@ -32,7 +32,8 @@ EXTRAS = {
         'django-environ==0.4.5',
         'tox==3.13.2',
         'bumpversion==0.5.3',
-        'tox-pyenv==1.1.0'
+        'tox-pyenv==1.1.0',
+        'django-filter==2.2.0'
     ]
 }
 

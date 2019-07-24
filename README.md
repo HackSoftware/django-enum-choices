@@ -12,6 +12,7 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
 - [Postgres ArrayField Usage](#postgres-arrayfield-usage)
 - [Usage with Django Rest Framework](#usage-with-django-rest-framework)
   - [Caveat](#caveat)
+- [Usage with `django-filter`](#usage-with-django-filter)
 - [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
 - [Implementation details](#implementation-details)
 - [Using Python's `enum.auto`](#using-pythons-enumauto)
@@ -364,6 +365,67 @@ serializer.save()
 
 The `EnumChoiceModelSerializerMixin` does not need to be used if `enumerated_field` is defined on the serializer class explicitly.
 
+## Usage with `django-filter`
+**By declaring the field explicitly on the `FilterSet`**
+```python
+import django_filters as filters
+
+from django_enum_choices.filters import EnumChoiceFilter
+
+class ExplicitFilterSet(filters.FilterSet):
+    enumerated_field = EnumChoiceFilter(MyEnum)
+
+
+filters = {
+    'enumerated_field': 'a'
+}
+filterset = ExplicitFilterSet(filters, MyModel.objects.all())
+
+print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
+```
+
+**By using a `Meta` inner class and inheriting from `EnumChoiceFilterMixin`**
+```python
+import django_filters as filters
+
+from django_enum_choices.filters import EnumChoiceFilterMixin
+
+class ImplicitFilterSet(EnumChoiceFilterSetMixin, filters.FilterSet):
+    class Meta:
+        model = MyModel
+        fields = ['enumerated_field']
+
+filters = {
+    'enumerated_field': 'a'
+}
+filterset = ImplicitFilterSet(filters)
+
+print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
+```
+
+The `choice_builder` argument can be passed to `django_enum_choices.filters.EnumChoiceFilter` as well when using the field explicitly. When using `EnumChoiceFilterSetMixin`, the `choice_builder` is determined from the model field, for the fields defined inside the `Meta` inner class.
+
+```python
+import django_filters as filters
+
+from django_enum_choices.filters import EnumChoiceFilter
+
+def custom_choice_builder(choice):
+    return 'Custom_' + choice.value, choice.value
+
+class ExplicitCustomChoiceBuilderFilterSet(filters.FilterSet):
+    enumerated_field = EnumChoiceFilter(
+        MyEnum,
+        choice_builder=custom_choice_builder
+    )
+
+filters = {
+    'enumerated_field': 'Custom_a'
+}
+filterset = ExplicitCustomChoiceBuilderFilterSet(filters, MyModel.objects.all())
+
+print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
+```
 
 ## Implementation details
 

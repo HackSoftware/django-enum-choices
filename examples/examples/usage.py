@@ -9,6 +9,7 @@ from .serializers import (
     CustomChoiceBuilderSerializer
 )
 from .forms import StandardEnumForm, ModelEnumForm, CustomChoiceBuilderEnumForm
+from .filters import ExplicitFilterSet, ExplicitCustomChoiceBuilderFilterSet, ImplicitFilterSet
 
 
 # Object Creation
@@ -169,3 +170,39 @@ def get_value_from_form_with_custom_choice_builder_field():
     form.is_valid()
 
     return form.cleaned_data
+
+
+def filter_with_explicit_field():
+    for choice in MyEnum:
+        MyModel.objects.create(enumerated_field=choice)
+
+    filters = {
+        'enumerated_field': 'a'
+    }
+    filterset = ExplicitFilterSet(filters, MyModel.objects.all())
+
+    return filterset.qs.values_list('enumerated_field', flat=True)
+
+
+def filter_with_explicit_field_with_custom_choice_builder():
+    for choice in MyEnum:
+        MyModel.objects.create(enumerated_field=choice)
+
+    filters = {
+        'enumerated_field': 'Custom_a'
+    }
+    filterset = ExplicitCustomChoiceBuilderFilterSet(filters, MyModel.objects.all())
+
+    return filterset.qs.values_list('enumerated_field', flat=True)
+
+
+def filter_with_implicit_field():
+    for choice in MyEnum:
+        MyModel.objects.create(enumerated_field=choice)
+
+    filters = {
+        'enumerated_field': 'a'
+    }
+    filterset = ImplicitFilterSet(filters)
+
+    return filterset.qs.values_list('enumerated_field', flat=True)

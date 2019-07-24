@@ -18,6 +18,13 @@ class EnumChoiceFilter(filters.ChoiceFilter):
 
 
 class EnumChoiceFilterSetMixin:
+    """
+    `django-filter` has specific logic for handling fields with `choices`.
+    We need to override `filter_for_lookup` to return an `EnumChoiceFilter`
+    before `django-filter` returns a `ChoiceFilter` as the `filter_class`
+    for the `EnumChoiceField` instances in the model.
+    """
+
     @classmethod
     def filter_for_lookup(cls, field, lookup_type):
         if isinstance(field, EnumChoiceField):

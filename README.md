@@ -5,18 +5,27 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
 [![PyPI version](https://badge.fury.io/py/django-enum-choices.svg)](https://badge.fury.io/py/django-enum-choices)
 
 ## Table of Contents
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [Customizing readable values](#customizing-readable-values)
-- [Usage with forms](#usage-with-forms)
-- [Postgres ArrayField Usage](#postgres-arrayfield-usage)
-- [Usage with Django Rest Framework](#usage-with-django-rest-framework)
-  - [Caveat](#caveat)
-- [Usage with `django-filter`](#usage-with-django-filter)
-- [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
-- [Implementation details](#implementation-details)
-- [Using Python's `enum.auto`](#using-pythons-enumauto)
-- [Development](#development)
+
+- [django-enum-choices](#django-enum-choices)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Basic Usage](#basic-usage)
+  - [Choice builders](#choice-builders)
+  - [Usage with forms](#usage-with-forms)
+    - [Usage with `django.forms.ModelForm`](#usage-with-djangoformsmodelform)
+    - [Usage with `django.forms.Form`](#usage-with-djangoformsform)
+  - [Usage with `django-filter`](#usage-with-django-filter)
+    - [By using a `Meta` inner class and inheriting from `EnumChoiceFilterMixin`](#by-using-a-meta-inner-class-and-inheriting-from-enumchoicefiltermixin)
+    - [By declaring the field explicitly on the `FilterSet`](#by-declaring-the-field-explicitly-on-the-filterset)
+  - [Postgres ArrayField Usage](#postgres-arrayfield-usage)
+  - [Usage with Django Rest Framework](#usage-with-django-rest-framework)
+    - [Using `serializers.ModelSerializer` with `EnumChoiceModelSerializerMixin`](#using-serializersmodelserializer-with-enumchoicemodelserializermixin)
+    - [Using `serializers.ModelSerializer` without `EnumChoiceModelSerializerMixin`](#using-serializersmodelserializer-without-enumchoicemodelserializermixin)
+    - [Using a subclass of `serializers.Serializer`](#using-a-subclass-of-serializersserializer)
+    - [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
+  - [Implementation details](#implementation-details)
+  - [Using Python's `enum.auto`](#using-pythons-enumauto)
+  - [Development](#development)
 
 ## Installation
 
@@ -422,7 +431,7 @@ If you are using a custom `choice_builder`, you need to pass that too.
 
 `django-enum-choices` exposes a `MultipleEnumChoiceField` that can be used for serializing arrays of enumerations.
 
-### Using a subclass of `serializers.Serializer`
+**Using a subclass of `serializers.Serializer`**
 
 ```python
 from rest_framework import serializers
@@ -446,7 +455,7 @@ serializer.is_valid()
 data = serializer.validated_data  # OrderedDict([('enumerated_field', [<MyEnum.A: 'a'>, <MyEnum.B: 'b'>])])
 ```
 
-#### Using a subclass of `serializers.ModelSerializer`
+**Using a subclass of `serializers.ModelSerializer`**
 
 ```python
 class ImplicitMultipleMyModelSerializer(
@@ -510,6 +519,7 @@ We'll have the following:
 * `SomeModel.enumerated_field.max_length == 3`
 
 ## Using Python's `enum.auto`
+
 `enum.auto` can be used for shorthand enumeration definitions:
 
 ```python
@@ -547,6 +557,7 @@ class CustomAutoEnum(CustomAutoEnumValueGenerator):
 The above will assign the values mapped in the dictionary as values to attributes in `CustomAutoEnum`.
 
 ## Development
+
 **Prerequisites**
 * SQLite3
 * PostgreSQL server

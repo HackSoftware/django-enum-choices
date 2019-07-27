@@ -281,6 +281,8 @@ print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<My
 ```
 ## Postgres ArrayField Usage
 
+You can use `EnumChoiceField` as a child fielf of an Postgres `ArrayField`.
+
 ```python
 from django.db import models
 from django.contrib.postgres.fields import ArrayField
@@ -366,6 +368,7 @@ serializer.save()
 ```
 
 **Additionally, a `choice_builder` argument can be passed to the serializer field** for custom choice generation:
+
 ```python
 def custom_choice_builder(choice):
     return 'Custom_' + choice.value, choice.value

@@ -140,25 +140,13 @@ The values in the returned from `choice_builder` tuple will be cast to strings b
 
 ## Usage with forms
 
-**Usage with `django.forms.Form`**
+There are 2 rules of thumb:
 
-```python
-from django_enum_choices.forms import EnumChoiceField
+1. If you use a `ModelForm`, everything will be taken care of automatically.
+2. If you use a `Form`, you need to take into account what `Enum` and `choice_builder` you are using.
 
-from .enumerations import MyEnum
 
-class StandardEnumForm(forms.Form):
-    enumerated_field = EnumChoiceField(MyEnum)
-
-form = StandardEnumForm({
-    'enumerated_field': 'a'
-})
-form.is_valid()
-
-print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
-```
-
-**Usage with `django.forms.ModelForm`**
+### Usage with `django.forms.ModelForm`
 
 ```python
 from .models import MyModel
@@ -177,8 +165,27 @@ form.is_valid()
 print(form.save(commit=True))  # <MyModel: MyModel object (12)>
 ```
 
-A `choice_builder` argument can be passed to `django_model_choices.forms.EnumChoiceField`
-for usage with model fields with custom choice builders:
+### Usage with `django.forms.Form`
+
+If you are using the default `value_value` choice builder, you can just do that:
+
+```python
+from django_enum_choices.forms import EnumChoiceField
+
+from .enumerations import MyEnum
+
+class StandardEnumForm(forms.Form):
+    enumerated_field = EnumChoiceField(MyEnum)
+
+form = StandardEnumForm({
+    'enumerated_field': 'a'
+})
+form.is_valid()
+
+print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
+```
+
+If you are passing a different choice builder, you have to also pass it to the form field:
 
 ```python
 from .enumerations import MyEnum

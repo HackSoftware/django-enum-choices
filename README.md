@@ -27,12 +27,12 @@ pip install django-enum-choices
 ## Basic Usage
 
 ```python
+from enum import Enum
+
 from django.db import models
 
 from django_enum_choices.fields import EnumChoiceField
 
-
-from enum import Enum
 
 class MyEnum(Enum):
     A = 'a'
@@ -62,12 +62,25 @@ instance.save()
 MyModel.objects.filter(enumerated_field=MyEnum.A)
 ```
 
-## Customizing readable values
+## Choice builders
+
+`EnumChoiceField` extends `CharField` and generates choices internally. Each choice is generated using something, called a `choice_builder`.
+
+A choice builder function looks like that:
+
+```python
+def choice_builder(enum: Enum) -> Tuple[str, str]:
+    # Some implementation
+```
+
 If a `choice_builder` argument is passed to a model's `EnumChoiceField`, `django_enum_choices` will use it to generate the choices.
 The `choice_builder` must be a callable that accepts an enumeration choice and returns a tuple,
 containing the value to be saved and the readable value.
+
 By default `django_enum_choices` uses one of the four choice builders defined in `django_enum_choices.choice_builders`, named `value_value`.
+
 It returns a tuple containing the enumeration's value twice:
+
 ```python
 from django_enum_choices.choice_builders import value_value
 
@@ -78,7 +91,14 @@ class MyEnum(Enum):
 print(value_value(MyEnum.A))  # ('a', 'a')
 ```
 
-You can use one of the existing ones that fits your needs:
+You can use one of the four default ones that fits your needs:
+
+* `value_value`
+* `attribute_value`
+* `value_attribute`
+* `attribute_attribute`
+
+For example:
 
 ```python
 from django_enum_choices.choice_builders import attribute_value
@@ -96,7 +116,6 @@ class CustomReadableValueEnumModel(models.Model):
 
 The resulting choices for `enumerated_field` will be `(('A', 'a'), ('B', 'b'))`
 
-
 You can also define your own choice builder:
 
 ```python
@@ -104,7 +123,7 @@ class MyEnum(Enum):
     A = 'a'
     B = 'b'
 
-def choice_builder(choice):
+def choice_builder(choice: Enum) -> Tuple[str, str]:
     return choice.value, choice.value.upper() + choice.value
 
 class CustomReadableValueEnumModel(models.Model):

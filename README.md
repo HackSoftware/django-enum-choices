@@ -5,18 +5,27 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
 [![PyPI version](https://badge.fury.io/py/django-enum-choices.svg)](https://badge.fury.io/py/django-enum-choices)
 
 ## Table of Contents
-- [Installation](#installation)
-- [Basic Usage](#basic-usage)
-- [Customizing readable values](#customizing-readable-values)
-- [Usage with forms](#usage-with-forms)
-- [Postgres ArrayField Usage](#postgres-arrayfield-usage)
-- [Usage with Django Rest Framework](#usage-with-django-rest-framework)
-  - [Caveat](#caveat)
-- [Usage with `django-filter`](#usage-with-django-filter)
-- [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
-- [Implementation details](#implementation-details)
-- [Using Python's `enum.auto`](#using-pythons-enumauto)
-- [Development](#development)
+
+- [django-enum-choices](#django-enum-choices)
+  - [Table of Contents](#table-of-contents)
+  - [Installation](#installation)
+  - [Basic Usage](#basic-usage)
+  - [Choice builders](#choice-builders)
+  - [Usage with forms](#usage-with-forms)
+    - [Usage with `django.forms.ModelForm`](#usage-with-djangoformsmodelform)
+    - [Usage with `django.forms.Form`](#usage-with-djangoformsform)
+  - [Usage with `django-filter`](#usage-with-django-filter)
+    - [By using a `Meta` inner class and inheriting from `EnumChoiceFilterMixin`](#by-using-a-meta-inner-class-and-inheriting-from-enumchoicefiltermixin)
+    - [By declaring the field explicitly on the `FilterSet`](#by-declaring-the-field-explicitly-on-the-filterset)
+  - [Postgres ArrayField Usage](#postgres-arrayfield-usage)
+  - [Usage with Django Rest Framework](#usage-with-django-rest-framework)
+    - [Using `serializers.ModelSerializer` with `EnumChoiceModelSerializerMixin`](#using-serializersmodelserializer-with-enumchoicemodelserializermixin)
+    - [Using `serializers.ModelSerializer` without `EnumChoiceModelSerializerMixin`](#using-serializersmodelserializer-without-enumchoicemodelserializermixin)
+    - [Using a subclass of `serializers.Serializer`](#using-a-subclass-of-serializersserializer)
+    - [Serializing PostgreSQL ArrayField](#serializing-postgresql-arrayfield)
+  - [Implementation details](#implementation-details)
+  - [Using Python's `enum.auto`](#using-pythons-enumauto)
+  - [Development](#development)
 
 ## Installation
 
@@ -27,12 +36,12 @@ pip install django-enum-choices
 ## Basic Usage
 
 ```python
+from enum import Enum
+
 from django.db import models
 
 from django_enum_choices.fields import EnumChoiceField
 
-
-from enum import Enum
 
 class MyEnum(Enum):
     A = 'a'
@@ -62,12 +71,25 @@ instance.save()
 MyModel.objects.filter(enumerated_field=MyEnum.A)
 ```
 
-## Customizing readable values
+## Choice builders
+
+`EnumChoiceField` extends `CharField` and generates choices internally. Each choice is generated using something, called a `choice_builder`.
+
+A choice builder function looks like that:
+
+```python
+def choice_builder(enum: Enum) -> Tuple[str, str]:
+    # Some implementation
+```
+
 If a `choice_builder` argument is passed to a model's `EnumChoiceField`, `django_enum_choices` will use it to generate the choices.
 The `choice_builder` must be a callable that accepts an enumeration choice and returns a tuple,
 containing the value to be saved and the readable value.
+
 By default `django_enum_choices` uses one of the four choice builders defined in `django_enum_choices.choice_builders`, named `value_value`.
+
 It returns a tuple containing the enumeration's value twice:
+
 ```python
 from django_enum_choices.choice_builders import value_value
 
@@ -78,7 +100,14 @@ class MyEnum(Enum):
 print(value_value(MyEnum.A))  # ('a', 'a')
 ```
 
-You can use one of the existing ones that fits your needs:
+You can use one of the four default ones that fits your needs:
+
+* `value_value`
+* `attribute_value`
+* `value_attribute`
+* `attribute_attribute`
+
+For example:
 
 ```python
 from django_enum_choices.choice_builders import attribute_value
@@ -96,7 +125,6 @@ class CustomReadableValueEnumModel(models.Model):
 
 The resulting choices for `enumerated_field` will be `(('A', 'a'), ('B', 'b'))`
 
-
 You can also define your own choice builder:
 
 ```python
@@ -104,7 +132,7 @@ class MyEnum(Enum):
     A = 'a'
     B = 'b'
 
-def choice_builder(choice):
+def choice_builder(choice: Enum) -> Tuple[str, str]:
     return choice.value, choice.value.upper() + choice.value
 
 class CustomReadableValueEnumModel(models.Model):
@@ -121,25 +149,13 @@ The values in the returned from `choice_builder` tuple will be cast to strings b
 
 ## Usage with forms
 
-**Usage with `django.forms.Form`**
+There are 2 rules of thumb:
 
-```python
-from django_enum_choices.forms import EnumChoiceField
+1. If you use a `ModelForm`, everything will be taken care of automatically.
+2. If you use a `Form`, you need to take into account what `Enum` and `choice_builder` you are using.
 
-from .enumerations import MyEnum
 
-class StandardEnumForm(forms.Form):
-    enumerated_field = EnumChoiceField(MyEnum)
-
-form = StandardEnumForm({
-    'enumerated_field': 'a'
-})
-form.is_valid()
-
-print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
-```
-
-**Usage with `django.forms.ModelForm`**
+### Usage with `django.forms.ModelForm`
 
 ```python
 from .models import MyModel
@@ -158,8 +174,27 @@ form.is_valid()
 print(form.save(commit=True))  # <MyModel: MyModel object (12)>
 ```
 
-A `choice_builder` argument can be passed to `django_model_choices.forms.EnumChoiceField`
-for usage with model fields with custom choice builders:
+### Usage with `django.forms.Form`
+
+If you are using the default `value_value` choice builder, you can just do that:
+
+```python
+from django_enum_choices.forms import EnumChoiceField
+
+from .enumerations import MyEnum
+
+class StandardEnumForm(forms.Form):
+    enumerated_field = EnumChoiceField(MyEnum)
+
+form = StandardEnumForm({
+    'enumerated_field': 'a'
+})
+form.is_valid()
+
+print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
+```
+
+If you are passing a different choice builder, you have to also pass it to the form field:
 
 ```python
 from .enumerations import MyEnum
@@ -182,7 +217,81 @@ form.is_valid()
 print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
 ```
 
+## Usage with `django-filter`
+
+As with forms, there are 2 general rules of thumb:
+
+1. If you have declared an `EnumChoiceField` in the `Meta.fields` for a given `Meta.model`, you need to inherit `EnumChoiceFilterMixin` in your filter class & everything will be taken care of automatically.
+2. If you hare declaring an explicit field, without a model, you need to specify the `Enum` class & the `choice_builder`, if a custom one is used.
+
+### By using a `Meta` inner class and inheriting from `EnumChoiceFilterMixin`
+
+```python
+import django_filters as filters
+
+from django_enum_choices.filters import EnumChoiceFilterMixin
+
+class ImplicitFilterSet(EnumChoiceFilterSetMixin, filters.FilterSet):
+    class Meta:
+        model = MyModel
+        fields = ['enumerated_field']
+
+filters = {
+    'enumerated_field': 'a'
+}
+filterset = ImplicitFilterSet(filters)
+
+print(filterset.qs.values_list('enumerated_field', flat=True))
+# <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
+```
+
+The `choice_builder` argument can be passed to `django_enum_choices.filters.EnumChoiceFilter` as well when using the field explicitly. When using `EnumChoiceFilterSetMixin`, the `choice_builder` is determined from the model field, for the fields defined inside the `Meta` inner class.
+
+```python
+import django_filters as filters
+
+from django_enum_choices.filters import EnumChoiceFilter
+
+def custom_choice_builder(choice):
+    return 'Custom_' + choice.value, choice.value
+
+class ExplicitCustomChoiceBuilderFilterSet(filters.FilterSet):
+    enumerated_field = EnumChoiceFilter(
+        MyEnum,
+        choice_builder=custom_choice_builder
+    )
+
+filters = {
+    'enumerated_field': 'Custom_a'
+}
+filterset = ExplicitCustomChoiceBuilderFilterSet(filters, MyModel.objects.all())
+
+print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
+```
+
+
+### By declaring the field explicitly on the `FilterSet`
+
+```python
+import django_filters as filters
+
+from django_enum_choices.filters import EnumChoiceFilter
+
+class ExplicitFilterSet(filters.FilterSet):
+    enumerated_field = EnumChoiceFilter(MyEnum)
+
+
+filters = {
+    'enumerated_field': 'a'
+}
+filterset = ExplicitFilterSet(filters, MyModel.objects.all())
+
+print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
+```
+
 ## Postgres ArrayField Usage
+
+You can use `EnumChoiceField` as a child fielf of an Postgres `ArrayField`.
 
 ```python
 from django.db import models
@@ -217,31 +326,36 @@ instance.save()
 
 ## Usage with Django Rest Framework
 
-**Using a subclass of `serializers.Serializer`**
+As with forms & filters, there are 2 general rules of thumb:
+
+1. If you are using a `ModelSerializer` and you inherit `EnumChoiceModelSerializerMixin`, everything will be taken care of automatically.
+2. If you are using a `Serializer`, you need to take the `Enum` class & `choice_builder` into acount.
+
+### Using `serializers.ModelSerializer` with `EnumChoiceModelSerializerMixin`
 
 ```python
 from rest_framework import serializers
 
-from django_enum_choices.serializers import EnumChoiceField
+from django_enum_choices.serializers import EnumChoiceModelSerializerMixin
 
-class MySerializer(serializers.Serializer):
-    enumerated_field = EnumChoiceField(MyEnum)
-
-# Serialization:
-serializer = MySerializer({
-    'enumerated_field': MyEnum.A
-})
-data = serializer.data  # {'enumerated_field': 'a'}
-
-# Deserialization:
-serializer = MySerializer(data={
-    'enumerated_field': 'a'
-})
-serializer.is_valid()
-data = serializer.validated_data  # OrderedDict([('enumerated_field', <MyEnum.A: 'a'>)])
+class ImplicitMyModelSerializer(
+    EnumChoiceModelSerializerMixin,
+    serializers.ModelSerializer
+):
+    class Meta:
+        model = MyModel
+        fields = ('enumerated_field', )
 ```
 
-**Using a subclass of `serializers.ModelSerializer`**
+By default `ModelSerializer.build_standard_field` coerces any field that has a model field with choices to `ChoiceField` which returns the value directly.
+
+Since enum values resemble `EnumClass.ENUM_INSTANCE` they won't be able to be encoded by the `JSONEncoder` when being passed to a `Response`.
+
+That's why we need the mixin.
+
+When using the `EnumChoiceModelSerializerMixin` with DRF's `serializers.ModelSerializer`, the `choice_builder` is automatically passed from the model field to the serializer field.
+
+### Using `serializers.ModelSerializer` without `EnumChoiceModelSerializerMixin`
 
 ```python
 from rest_framework import serializers
@@ -268,7 +382,8 @@ serializer.is_valid()
 serializer.save()
 ```
 
-**Additionally, a `choice_builder` argument can be passed to the serializer field** for custom choice generation:
+If you are using a custom `choice_builder`, you need to pass that too.
+
 ```python
 def custom_choice_builder(choice):
     return 'Custom_' + choice.value, choice.value
@@ -286,33 +401,34 @@ serializer = CustomChoiceBuilderSerializer({
 data = serializer.data # {'enumerated_field': 'Custom_a'}
 ```
 
-When using the `EnumChoiceModelSerializerMixin` with DRF's `serializers.ModelSerializer`, the `choice_builder` is automatically passed from the model field to the serializer field.
-
-### Caveat
-
-If you don't explicitly specify the `enumerated_field = EnumChoiceField(MyEnum)`, then you need to include the `EnumChoiceModelSerializerMixin`:
+### Using a subclass of `serializers.Serializer`
 
 ```python
 from rest_framework import serializers
 
-from django_enum_choices.serializers import EnumChoiceModelSerializerMixin
+from django_enum_choices.serializers import EnumChoiceField
 
-class ImplicitMyModelSerializer(
-    EnumChoiceModelSerializerMixin,
-    serializers.ModelSerializer
-):
-    class Meta:
-        model = MyModel
-        fields = ('enumerated_field', )
+class MySerializer(serializers.Serializer):
+    enumerated_field = EnumChoiceField(MyEnum)
+
+# Serialization:
+serializer = MySerializer({
+    'enumerated_field': MyEnum.A
+})
+data = serializer.data  # {'enumerated_field': 'a'}
+
+# Deserialization:
+serializer = MySerializer(data={
+    'enumerated_field': 'a'
+})
+serializer.is_valid()
+data = serializer.validated_data  # OrderedDict([('enumerated_field', <MyEnum.A: 'a'>)])
 ```
 
-By default `ModelSerializer.build_standard_field` coerces any field that has a model field with choices to `ChoiceField` which returns the value directly.
+If you are using a custom `choice_builder`, you need to pass that too.
 
-Since enum values resemble `EnumClass.ENUM_INSTANCE` they won't be able to be encoded by the `JSONEncoder` when being passed to a `Response`.
+### Serializing PostgreSQL ArrayField
 
-That's why we need the mixin.
-
-## Serializing PostgreSQL ArrayField
 `django-enum-choices` exposes a `MultipleEnumChoiceField` that can be used for serializing arrays of enumerations.
 
 **Using a subclass of `serializers.Serializer`**
@@ -365,68 +481,6 @@ serializer.save()
 
 The `EnumChoiceModelSerializerMixin` does not need to be used if `enumerated_field` is defined on the serializer class explicitly.
 
-## Usage with `django-filter`
-**By declaring the field explicitly on the `FilterSet`**
-```python
-import django_filters as filters
-
-from django_enum_choices.filters import EnumChoiceFilter
-
-class ExplicitFilterSet(filters.FilterSet):
-    enumerated_field = EnumChoiceFilter(MyEnum)
-
-
-filters = {
-    'enumerated_field': 'a'
-}
-filterset = ExplicitFilterSet(filters, MyModel.objects.all())
-
-print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
-```
-
-**By using a `Meta` inner class and inheriting from `EnumChoiceFilterMixin`**
-```python
-import django_filters as filters
-
-from django_enum_choices.filters import EnumChoiceFilterMixin
-
-class ImplicitFilterSet(EnumChoiceFilterSetMixin, filters.FilterSet):
-    class Meta:
-        model = MyModel
-        fields = ['enumerated_field']
-
-filters = {
-    'enumerated_field': 'a'
-}
-filterset = ImplicitFilterSet(filters)
-
-print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
-```
-
-The `choice_builder` argument can be passed to `django_enum_choices.filters.EnumChoiceFilter` as well when using the field explicitly. When using `EnumChoiceFilterSetMixin`, the `choice_builder` is determined from the model field, for the fields defined inside the `Meta` inner class.
-
-```python
-import django_filters as filters
-
-from django_enum_choices.filters import EnumChoiceFilter
-
-def custom_choice_builder(choice):
-    return 'Custom_' + choice.value, choice.value
-
-class ExplicitCustomChoiceBuilderFilterSet(filters.FilterSet):
-    enumerated_field = EnumChoiceFilter(
-        MyEnum,
-        choice_builder=custom_choice_builder
-    )
-
-filters = {
-    'enumerated_field': 'Custom_a'
-}
-filterset = ExplicitCustomChoiceBuilderFilterSet(filters, MyModel.objects.all())
-
-print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<MyEnum.A: 'a'>, <MyEnum.A: 'a'>, <MyEnum.A: 'a'>]>
-```
-
 ## Implementation details
 
 * `EnumChoiceField` is a subclass of `CharField`.
@@ -465,6 +519,7 @@ We'll have the following:
 * `SomeModel.enumerated_field.max_length == 3`
 
 ## Using Python's `enum.auto`
+
 `enum.auto` can be used for shorthand enumeration definitions:
 
 ```python
@@ -502,6 +557,7 @@ class CustomAutoEnum(CustomAutoEnumValueGenerator):
 The above will assign the values mapped in the dictionary as values to attributes in `CustomAutoEnum`.
 
 ## Development
+
 **Prerequisites**
 * SQLite3
 * PostgreSQL server

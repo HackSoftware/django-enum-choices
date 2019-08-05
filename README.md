@@ -222,7 +222,7 @@ print(form.cleaned_data)  # {'enumerated_field': <MyEnum.A: 'a'>}
 As with forms, there are 2 general rules of thumb:
 
 1. If you have declared an `EnumChoiceField` in the `Meta.fields` for a given `Meta.model`, you need to inherit `EnumChoiceFilterMixin` in your filter class & everything will be taken care of automatically.
-2. If you hare declaring an explicit field, without a model, you need to specify the `Enum` class & the `choice_builder`, if a custom one is used.
+2. If you are declaring an explicit field, without a model, you need to specify the `Enum` class & the `choice_builder`, if a custom one is used.
 
 ### By using a `Meta` inner class and inheriting from `EnumChoiceFilterMixin`
 
@@ -291,7 +291,7 @@ print(filterset.qs.values_list('enumerated_field', flat=True))  # <QuerySet [<My
 
 ## Postgres ArrayField Usage
 
-You can use `EnumChoiceField` as a child fielf of an Postgres `ArrayField`.
+You can use `EnumChoiceField` as a child field of an Postgres `ArrayField`.
 
 ```python
 from django.db import models

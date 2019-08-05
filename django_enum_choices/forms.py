@@ -37,9 +37,12 @@ class EnumChoiceField(forms.ChoiceField):
         return self._enum_from_input_value(value) or value
 
     def prepare_value(self, value):
-        return value_from_built_choice(
-            self.choice_builder(value)
-        )
+        if not value or isinstance(value, self.enum_class):
+            return value_from_built_choice(
+                self.choice_builder(value)
+            )
+
+        return value
 
     def valid_value(self, value):
         return value in self.enum_class

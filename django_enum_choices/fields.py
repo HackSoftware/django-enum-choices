@@ -5,11 +5,13 @@ from django.db.models import CharField
 from django.core.exceptions import ValidationError
 from django.core.validators import MaxLengthValidator
 from django.utils.translation import gettext as _
+from django.utils.text import capfirst
 
 from .exceptions import EnumChoiceFieldException
 from .validators import EnumValueMaxLengthValidator
 from .choice_builders import value_value
 from .utils import as_choice_builder, value_from_built_choice, build_enum_choices
+from .forms import EnumChoiceField as EnumChoiceFormField
 
 
 class EnumChoiceField(CharField):
@@ -149,3 +151,46 @@ class EnumChoiceField(CharField):
             (self.to_enum_value(choice), readable)
             for choice, readable in flatchoices
         ]
+
+    def formfield(self, **kwargs):
+        """
+        Uses `django.forms.Field`'s parameter generation with
+        `EnumChoiceField` specific updates.
+        """
+
+        defaults = {
+            'required': not self.blank,
+            'label': capfirst(self.verbose_name),
+            'help_text': self.help_text,
+            'enum_class': self.enum_class,
+            'choice_builder': self.choice_builder
+        }
+
+        if self.has_default():
+            if callable(self.default):
+                defaults['initial'] = self.default
+                defaults['show_hidden_initial'] = True
+            else:
+                defaults['initial'] = self.get_default()
+
+        include_blank = (self.blank or
+                         not (self.has_default() or 'initial' in kwargs))
+        defaults['choices'] = self.get_choices(include_blank=include_blank)
+
+        if self.null:
+            defaults['empty_value'] = None
+
+        # Many of the subclass-specific formfield arguments (min_value,
+        # max_value) don't apply for choice fields, so be sure to only pass
+        # the values that TypedChoiceField will understand.
+        for k in list(kwargs):
+            if k not in (
+                'coerce', 'empty_value', 'choices', 'required', 'enum_class'
+                'choice_builder, ''widget', 'label', 'initial', 'help_text',
+                'error_messages', 'show_hidden_initial', 'disabled'
+            ):
+                del kwargs[k]
+
+        defaults.update(kwargs)
+
+        return EnumChoiceFormField(**defaults)

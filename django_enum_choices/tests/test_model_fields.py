@@ -7,6 +7,7 @@ from django.contrib.admin.utils import display_for_field
 from django_enum_choices.fields import EnumChoiceField
 from django_enum_choices.exceptions import EnumChoiceFieldException
 from django_enum_choices.choice_builders import value_value
+from django_enum_choices.forms import EnumChoiceField as EnumChoiceFormField
 
 from .testapp.enumerations import CharTestEnum, IntTestEnum
 
@@ -336,3 +337,20 @@ class EnumChoiceFieldTests(TestCase):
             'All choices generated from {} must be strings.'.format(CharTestEnum)
         ):
             instance.build_choices()
+
+    def test_get_choices_returns_choices_in_correct_format(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.get_choices()
+
+        self.assertEqual(len(result), 4)
+        self.assertIn(instance.choice_builder(CharTestEnum.FIRST), result)
+        self.assertIn(instance.choice_builder(CharTestEnum.SECOND), result)
+        self.assertIn(instance.choice_builder(CharTestEnum.THIRD), result)
+
+    def test_formfield_returns_enum_choice_form_field_instance(self):
+        instance = EnumChoiceField(enum_class=CharTestEnum)
+
+        result = instance.formfield()
+
+        self.assertIsInstance(result, EnumChoiceFormField)

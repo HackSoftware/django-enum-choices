@@ -1,7 +1,6 @@
 from django.apps import apps
 
-
-if apps.ready:
+if apps.apps_ready:
     """
 
     `register_enum_choice_list_filter` depends on `django.conf.settings`

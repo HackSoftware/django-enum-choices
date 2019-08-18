@@ -29,8 +29,27 @@ class EnumChoiceField(CharField):
         # Saving original for proper deconstruction
         self._original_choice_builder = choice_builder
 
+        built_choices = self.build_choices()
+
+        # `choices` is passed to `__init__` when migrations are generated
+        # `choices` should not be passed when normally initializing the field
+        self._passed_choices = kwargs.get(
+            'choices',
+            built_choices
+        )  # Saved for deconstruction
+
         kwargs['choices'] = self.build_choices()
-        kwargs['max_length'] = self._calculate_max_length(**kwargs)
+
+        calculated_max_length = self._calculate_max_length(**kwargs)
+
+        # `max_length` is passed to `__init__` when migrations are generated
+        # `max_length` should not be passed when normally initializing the field
+        self._passed_max_length = kwargs.get(
+            'max_length',
+            calculated_max_length
+        )  # Saved for deconstruction
+
+        kwargs['max_length'] = calculated_max_length
 
         super().__init__(**kwargs)
 
@@ -97,6 +116,9 @@ class EnumChoiceField(CharField):
 
     def deconstruct(self):
         name, path, args, kwargs = super().deconstruct()
+
+        kwargs['max_length'] = self._passed_max_length
+        kwargs['choices'] = self._passed_choices
 
         if self.enum_class:
             kwargs['enum_class'] = self.enum_class

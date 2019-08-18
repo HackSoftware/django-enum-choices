@@ -48,7 +48,6 @@ class EnumChoiceListFilter(admin.ChoicesFieldListFilter):
                 'display': none_title,
             }
 
-
     def queryset(self, request, queryset):
         query = {
             field_name: self.field.to_enum_value(value)

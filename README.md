@@ -11,6 +11,7 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
   - [Installation](#installation)
   - [Basic Usage](#basic-usage)
   - [Choice builders](#choice-builders)
+  - [Usage inside the admin panel](#usage-in-the-admin-panel)
   - [Usage with forms](#usage-with-forms)
     - [Usage with `django.forms.ModelForm`](#usage-with-djangoformsmodelform)
     - [Usage with `django.forms.Form`](#usage-with-djangoformsform)
@@ -145,6 +146,44 @@ class CustomReadableValueEnumModel(models.Model):
 Which will result in the following choices `(('a', 'Aa'), ('b', 'Bb'))`
 
 The values in the returned from `choice_builder` tuple will be cast to strings before being used.
+
+
+## Usage in the admin panel
+
+Model fields, defined as `EnumChoiceField` can be used with almost all of the admin panel's
+standard functionallities.
+
+One exception from this their usage in `list_filter`.
+
+If you need an `EnumChoiceField` inside a `ModelAdmin`'s `list_filter`, you can use the following
+options:
+
+* Define the entry insite the list filter as a tuple, containing the field's name and `django_enum_choices.admin.EnumChoiceListFilter`
+
+```python
+from django.contrib import admin
+
+from django_enum_choices.admin import EnumChoiceListFilter
+
+from .models import MyModel
+
+@admin.register(MyModel)
+class MyModelAdmin(admin.ModelAdmin):
+    list_filter = [('enumerated_field', EnumChoiceListFilter)]
+```
+
+* Set `DJANGO_ENUM_CHOICES_REGISTER_LIST_FILTER` inside your settings to `True`, which will automatically set the `EnumChoiceListFilter` class to all
+`list_filter` fields that are instances of `EnumChoiceField`. This way, they can be declared directly in the `list_filter` iterable:
+
+```python
+from django.contrib import admin
+
+from .models import MyModel
+
+@admin.register(MyModel)
+class MyModelAdmin(admin.ModelAdmin):
+    list_filter = ('enumerated_field', )
+```
 
 
 ## Usage with forms

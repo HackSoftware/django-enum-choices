@@ -38,7 +38,7 @@ class EnumChoiceField(CharField):
             built_choices
         )  # Saved for deconstruction
 
-        kwargs['choices'] = self.build_choices()
+        kwargs['choices'] = built_choices
 
         calculated_max_length = self._calculate_max_length(**kwargs)
 

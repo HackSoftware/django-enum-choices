@@ -177,17 +177,14 @@ class EnumChoiceField(CharField):
                          not (self.has_default() or 'initial' in kwargs))
         defaults['choices'] = self.get_choices(include_blank=include_blank)
 
-        if self.null:
-            defaults['empty_value'] = None
-
         # Many of the subclass-specific formfield arguments (min_value,
         # max_value) don't apply for choice fields, so be sure to only pass
         # the values that TypedChoiceField will understand.
         for k in list(kwargs):
             if k not in (
-                'coerce', 'empty_value', 'choices', 'required', 'enum_class'
+                'coerce', 'choices', 'required', 'enum_class', 'disabled',
                 'choice_builder, ''widget', 'label', 'initial', 'help_text',
-                'error_messages', 'show_hidden_initial', 'disabled'
+                'error_messages', 'show_hidden_initial',
             ):
                 del kwargs[k]
 

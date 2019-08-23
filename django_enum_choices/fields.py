@@ -18,7 +18,7 @@ class EnumChoiceField(CharField):
     description = _('EnumChoiceField for %(enum_class)')
 
     def __init__(self, enum_class: Enum, choice_builder=value_value, **kwargs):
-        if not (Enum in enum_class.__mro__):
+        if not issubclass(enum_class, Enum):
             raise EnumChoiceFieldException(
                 _('`enum_class` argument must be a child of `Enum`')
             )

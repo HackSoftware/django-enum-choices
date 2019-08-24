@@ -1,6 +1,6 @@
 import os
 import shutil
-import subprocess
+from subprocess import check_output
 import shlex
 
 import psycopg2
@@ -36,8 +36,10 @@ class Database:
 
 
 class Setuper:
-    def __init__(self):
+    def __init__(self, database, test_case):
         self.cwd = os.getcwd()
+        self.database = database
+        self.test_case = test_case
 
     def get_base_project_location(self):
         return f'{self.cwd}/e2e'
@@ -49,15 +51,17 @@ class Setuper:
         return f'{self.get_new_project_location()}/test_models/models.py'
 
     def call(self, command):
-        subprocess.call(shlex.split(command))
+        result = check_output(shlex.split(command)).decode('utf-8')
 
-    def before_setup(self, database):
-        database.close()
+        return result
+
+    def before_setup(self):
+        self.database.close()
 
         self.call('dropdb --if-exists django_enum_choices_e2e')
-        self.call('createdb -O radorado django_enum_choices_e2e')
+        self.call('createdb django_enum_choices_e2e')
 
-        database.open()
+        self.database.open()
 
         base_project_location = self.get_base_project_location()
 
@@ -81,14 +85,10 @@ class Setuper:
         with open(models, 'r') as models_file:
             models_content = models_file.read()
 
-        models_content = models_content.replace(' #', '')
+        models_content = models_content.replace(f' #{self.test_case}', '')
 
         with open(models, 'w') as models_file:
             models_file.write(models_content)
-
-        os.chdir(new_project_location)
-        self.call('python manage.py makemigrations')
-        self.call('python manage.py migrate')
 
     def after_setup(self):
         new_project_location = self.get_new_project_location()
@@ -96,19 +96,69 @@ class Setuper:
         if os.path.exists(new_project_location):
             shutil.rmtree(new_project_location)
 
+        os.chdir(self.cwd)
+        self.database.close()
 
-setuper = Setuper()
-database = Database()
 
-setuper.before_setup(database)
+def test_case_1():
+    """
+    If we add new choice, which changes the max length, we should have a migration,
+    plus the column in postgres should be affected.
+    """
+    print('Running test case 1')
 
-print(database.get_column_size())
-print(setuper.get_base_project_location())
-print(setuper.get_new_project_location())
-print(setuper.get_models_path())
+    database = Database()
 
-setuper.setup()
+    setuper = Setuper(database, 'TEST_1')
 
-print(database.get_column_size())
+    setuper.before_setup()
+    assert database.get_column_size() == 3, 'Initial max length should be 3'
 
-setuper.after_setup()
+    setuper.setup()
+
+    new_project_location = setuper.get_new_project_location()
+
+    os.chdir(new_project_location)
+
+    result = setuper.call('python manage.py makemigrations')
+
+    assert 'No changes detected' not in result, 'There should be new migrations'
+
+    print(result)
+
+    print(setuper.call('python manage.py migrate'))
+
+    assert database.get_column_size() == 4, 'Migration should increase the max length to 4'
+
+    setuper.after_setup()
+
+
+def test_case_2():
+    """
+    If we add new choice, but within the existing max length, we should have a new migration.
+    """
+    print('Running test case 2')
+
+    database = Database()
+
+    setuper = Setuper(database, 'TEST_2')
+    setuper.before_setup()
+    setuper.setup()
+
+    new_project_location = setuper.get_new_project_location()
+
+    os.chdir(new_project_location)
+
+    result = setuper.call('python manage.py makemigrations')
+
+    assert 'No changes detected' not in result, 'There should be new migrations'
+
+    print(result)
+
+    print(setuper.call('python manage.py migrate'))
+
+    setuper.after_setup()
+
+
+test_case_1()
+test_case_2()

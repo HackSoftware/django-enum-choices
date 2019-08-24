@@ -55,3 +55,6 @@ jobs:
             pip install tox tox-pyenv
             pyenv local 3.5.7 3.6.4 3.7.0
             tox
+            pyenv local 3.7.0
+            pip install -e .[dev]
+            cd django_enum_choices/tests/e2e && python3 tests.py

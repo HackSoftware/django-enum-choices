@@ -8,9 +8,6 @@ from psycopg2.extras import DictCursor
 
 
 class Database:
-    def __init__(self):
-        self.open()
-
     def get_column_size(self):
         cursor = self.connection.cursor(
             cursor_factory=DictCursor
@@ -29,7 +26,8 @@ class Database:
         return result['max_length']
 
     def open(self):
-        self.connection = psycopg2.connect('postgres:///django_enum_choices_e2e')
+        database_url = os.environ.get('DATABASE_URL', 'postgres:///django_enum_choices_e2e')
+        self.connection = psycopg2.connect(database_url)
 
     def close(self):
         self.connection.close()
@@ -56,10 +54,9 @@ class Setuper:
         return result
 
     def before_setup(self):
-        self.database.close()
-
-        self.call('dropdb --if-exists django_enum_choices_e2e')
-        self.call('createdb django_enum_choices_e2e')
+        if not os.environ.get('CI', False):
+            self.call('dropdb --if-exists django_enum_choices_e2e')
+            self.call('createdb django_enum_choices_e2e')
 
         self.database.open()
 

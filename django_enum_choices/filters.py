@@ -16,6 +16,9 @@ class EnumChoiceFilter(filters.ChoiceFilter):
             **kwargs
         )
 
+class EnumChoiceInFilter(filters.BaseInFilter, EnumChoiceFilter):
+    pass
+
 
 class EnumChoiceFilterSetMixin:
     """
@@ -28,6 +31,12 @@ class EnumChoiceFilterSetMixin:
     @classmethod
     def filter_for_lookup(cls, field, lookup_type):
         if isinstance(field, EnumChoiceField):
+            if lookup_type == "in":
+                return EnumChoiceInFilter, {
+                    'enum_class': field.enum_class,
+                    'choice_builder': field.choice_builder
+                }
+
             return EnumChoiceFilter, {
                 'enum_class': field.enum_class,
                 'choice_builder': field.choice_builder

@@ -161,3 +161,8 @@ class MigrationExecutionSQLite3Tests(MigrationExecutionTestMixin, TransactionTes
 @override_settings(CURRENT_DATABASE='postgresql')
 class MigrationExecutionPostgreSQLTests(MigrationExecutionTestMixin, TransactionTestCase):
     databases = ['postgresql']
+
+
+@override_settings(CURRENT_DATABASE='mysql')
+class MigrationExecutionMySQLTests(MigrationExecutionTestMixin, TransactionTestCase):
+    databases = ['mysql']

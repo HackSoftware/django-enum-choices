@@ -16,8 +16,8 @@ DATABASES = {
         'ENGINE': 'django.db.backends.mysql',
         'HOST': '127.0.0.1',
         'PORT': '3306',
-        'NAME': 'django_enum_choices',
-        'USER': 'test_user',
+        'NAME': 'django_enum_choices_mysql',
+        'USER': env('MYSQL_USER', default='test_user'),
         'PASSWORD': 'test_password',
         'OPTIONS': {
             'init_command': 'SET default_storage_engine=INNODB',

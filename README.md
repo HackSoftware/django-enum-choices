@@ -613,7 +613,7 @@ Setting up `MySQl`:
  1. Connect to `mysql` using with your super user
  2. Create the database
  ```sql
- CREATE DATABASE django_enum_choices;
+ CREATE DATABASE django_enum_choices_mysql;
  ```
  3. Create the test user
  ```

@@ -6,10 +6,17 @@ jobs:
       - image: circleci/python:3.6.7-stretch
         environment:
           DATABASE_URL: postgresql://root@localhost/test_django_enum_choices?sslmode=disable
-      - image: circleci/postgres:11.4
+          MYSQL_USER: root
+      - image: circleci/postgres:10.10
         environment:
           POSTGRES_USER: root
           POSTGRES_DB: test_django_enum_choices
+      - image: circleci/mysql:5.7.27
+        environment:
+          MYSQL_ROOT_PASSWORD: test_password
+          MYSQL_DATABASE: django_enum_choices_mysql
+          MYSQL_USER: test_user
+          MYSQL_PASSWORD: test_password
 
     steps:
       - checkout
@@ -19,8 +26,18 @@ jobs:
           environment:
             DOCKERIZE_VERSION: v0.3.0
       - run:
-          name: Wait for db
+          name: Wait for PostgreSQL DB
           command: dockerize -wait tcp://localhost:5432 -timeout 1m
+      - run:
+          name: Wait for MySQL DB
+          command: |
+            for i in `seq 1 10`;
+            do
+              nc -z 127.0.0.1 3306 && echo Success && exit 0
+              echo -n .
+              sleep 1
+            done
+            echo Failed waiting for MySQL && exit 1
       - run: sudo chown -R circleci:circleci /usr/local/bin
       - run: sudo chown -R circleci:circleci /usr/local/lib/python3.6/site-packages
 

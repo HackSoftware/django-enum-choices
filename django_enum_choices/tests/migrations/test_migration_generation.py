@@ -128,5 +128,7 @@ class MigrationApplicationTests(MigrationTestMixin, TransactionTestCase):
         self.assertColumnType(
             'migrations_testapp__custommodel',
             'enumeration',
-            f'varchar({len(self._create_secondary_enum_class().EXTRA_LONG_ENUMERATION.value)})'
+            'varchar({})'.format(
+                len(self._create_secondary_enum_class().EXTRA_LONG_ENUMERATION.value)
+            )
         )

@@ -1,8 +1,9 @@
 from enum import Enum
 from typing import List
 
-from django.test import TestCase, TransactionTestCase
-from django.db import models, connection, connections
+from django.conf import settings
+from django.test import TestCase, TransactionTestCase, override_settings
+from django.db import models, connections
 from django.db.migrations.migration import Migration
 from django.db.migrations.autodetector import MigrationAutodetector
 from django.db.migrations.state import ModelState, ProjectState
@@ -86,13 +87,25 @@ class MigrationGenerationTests(MigrationTestMixin, TestCase):
         )
 
 
-class MigrationApplicationTests(MigrationTestMixin, TransactionTestCase):
-    def assertColumnType(self, table, column, column_type, using='default'):
+class MigrationExecutionTestMixin(MigrationTestMixin):
+    databases = ['default']
+
+    def assertColumnType(self, table, column, column_size):
+        using = settings.CURRENT_DATABASE
+
         with connections[using].cursor() as cursor:
-            column = [
-                col for col in connections[using].introspection.get_table_description(
+            introspection = connections[using].introspection
+
+            # Django < 2.2 PG database backend compatibillity
+            try:
+                table_description = introspection.get_table_description(
                     cursor, table
-                ) if col.name == column
+                )
+            except TypeError:
+                table_description = cursor.description
+
+            column = [
+                col for col in table_description if col.name == column
             ]
 
             if not column:
@@ -100,7 +113,16 @@ class MigrationApplicationTests(MigrationTestMixin, TransactionTestCase):
 
             column = column[0]
 
-            self.assertEqual(column.type_code, column_type)
+            field_type = introspection.data_types_reverse[column.type_code]
+
+            # Django < 2.2 sqlite3 backend compatibillity
+            if isinstance(field_type, tuple):
+                field_type = field_type[0]
+
+            internal_size = column.internal_size
+
+            self.assertEqual(field_type, 'CharField')
+            self.assertEqual(internal_size, column_size)
 
     def test_migration_is_applied(self):
         initial = self.make_project_state([self.initial_model_state])
@@ -108,7 +130,7 @@ class MigrationApplicationTests(MigrationTestMixin, TransactionTestCase):
 
         initial_migration = self.get_changes('migrations_testapp', ProjectState(), initial)[0]
 
-        with connection.schema_editor() as schema_editor:
+        with connections[settings.CURRENT_DATABASE].schema_editor() as schema_editor:
             applied_initial_state = initial_migration.apply(
                 ProjectState(),
                 schema_editor
@@ -117,18 +139,25 @@ class MigrationApplicationTests(MigrationTestMixin, TransactionTestCase):
         self.assertColumnType(
             'migrations_testapp__custommodel',
             'enumeration',
-            'varchar(6)'
+            6
         )
 
         after_migration = self.get_changes('migrations_testapp', applied_initial_state, after)[0]
 
-        with connection.schema_editor() as schema_editor:
+        with connections[settings.CURRENT_DATABASE].schema_editor() as schema_editor:
             after_migration.apply(initial, schema_editor)
 
         self.assertColumnType(
             'migrations_testapp__custommodel',
             'enumeration',
-            'varchar({})'.format(
-                len(self._create_secondary_enum_class().EXTRA_LONG_ENUMERATION.value)
-            )
+            len(self._create_secondary_enum_class().EXTRA_LONG_ENUMERATION.value),
         )
+
+
+class MigrationExecutionSQLite3Tests(MigrationExecutionTestMixin, TransactionTestCase):
+    database = ['default']
+
+
+@override_settings(CURRENT_DATABASE='postgresql')
+class MigrationExecutionPostgreSQLTests(MigrationExecutionTestMixin, TransactionTestCase):
+    databases = ['postgresql']

@@ -600,6 +600,7 @@ The above will assign the values mapped in the dictionary as values to attribute
 **Prerequisites**
 * SQLite3
 * PostgreSQL server
+* MySQL Server
 * Python >= 3.5 virtual environment
 
 ```bash
@@ -607,6 +608,18 @@ git clone https://github.com/HackSoftware/django-enum-choices.git
 cd django_enum_choices
 pip install -e .[dev]
 ```
+
+Setting up `MySQl`:
+ 1. Connect to `mysql` using with your super user
+ 2. Create the database
+ ```sql
+ CREATE DATABASE django_enum_choices;
+ ```
+ 3. Create the test user
+ ```
+ CREATE USER 'test_user'@'localhost';
+ GRANT ALL PRIVILEGES ON *.* TO 'test_user'@'localhost' WITH GRANT OPTION;
+ ```
 
 Linting and running the tests:
 ```bash

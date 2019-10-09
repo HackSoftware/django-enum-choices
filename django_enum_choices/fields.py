@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Tuple
+from typing import Tuple, Type
 
 from django.db.models import CharField
 from django.core.exceptions import ValidationError
@@ -17,7 +17,7 @@ from .forms import EnumChoiceField as EnumChoiceFormField
 class EnumChoiceField(CharField):
     description = _('EnumChoiceField for %(enum_class)')
 
-    def __init__(self, enum_class: Enum, choice_builder=value_value, **kwargs):
+    def __init__(self, enum_class: Type[Enum], choice_builder=value_value, **kwargs):
         if not issubclass(enum_class, Enum):
             raise EnumChoiceFieldException(
                 _('`enum_class` argument must be a child of `Enum`')

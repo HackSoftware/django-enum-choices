@@ -52,8 +52,14 @@ class EnumChoiceField(CharField):
             validator for validator in self.validators
             if not isinstance(validator, MaxLengthValidator)
         ]
+
+        should_validate_attribute_name = self.should_validate_attribute_name(**kwargs)
+
         self.validators.append(
-            EnumValueMaxLengthValidator(kwargs['max_length'])
+            EnumValueMaxLengthValidator(
+                limit_value=kwargs['max_length'],
+                validate_attribute_name=should_validate_attribute_name
+            )
         )
 
     def _get_choice_builder(self, choice_builder):
@@ -141,6 +147,13 @@ class EnumChoiceField(CharField):
                 code='invalid_choice',
                 params={'value': value}
             )
+
+    def should_validate_attribute_name(self, **kwargs) -> bool:
+        choices = kwargs['choices']
+        # Checking whether the provided choice builder returns tuples containing attribute as a first element
+        has_attribute_choice_builder = hasattr(self.enum_class, choices[0][0])
+
+        return has_attribute_choice_builder
 
     def value_to_string(self, obj):
         value = self.value_from_object(obj)

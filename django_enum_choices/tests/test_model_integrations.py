@@ -4,13 +4,14 @@ from django.core.exceptions import ValidationError
 
 from django_enum_choices.fields import EnumChoiceField
 
-from .testapp.enumerations import CharTestEnum, IntTestEnum
+from .testapp.enumerations import CharTestEnum, CharLongValuesTestEnum, IntTestEnum
 from .testapp.models import (
     IntegerEnumeratedModel,
     StringEnumeratedModel,
     NullableEnumeratedModel,
     BlankNullableEnumeratedModel,
-    EnumChoiceFieldWithDefaultModel
+    EnumChoiceFieldWithDefaultModel,
+    AttributeChoiceBuilderEnumeratedModel
 )
 
 
@@ -160,6 +161,13 @@ class ModelIntegrationTests(TestCase):
 
     def test_enum_value_from_enum_class_does_not_raise_error_on_clean(self):
         instance = StringEnumeratedModel(enumeration=CharTestEnum.FIRST)
+        instance.full_clean()
+        instance.save()
+
+        self.assertIsNotNone(instance)
+
+    def test_attribute_choice_builder_validates_enum_field_name_length(self):
+        instance = AttributeChoiceBuilderEnumeratedModel(enumeration=CharLongValuesTestEnum.FIRST)
         instance.full_clean()
         instance.save()
 

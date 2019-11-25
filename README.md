@@ -602,9 +602,15 @@ The above will assign the values mapped in the dictionary as values to attribute
 * PostgreSQL server
 * Python >= 3.5 virtual environment
 
+**Fork the repository**
 ```bash
-git clone https://github.com/HackSoftware/django-enum-choices.git
-cd django_enum_choices
+git clone https://github.com/your-user-name/django-enum-choices.git django-enum-choices-yourname
+cd django-enum-choices-yourname
+git remote add upstream https://github.com/HackSoftware/django-enum-choices.git
+```
+
+Install the requirements:
+```bash
 pip install -e .[dev]
 ```
 

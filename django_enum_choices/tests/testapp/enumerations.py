@@ -7,6 +7,12 @@ class CharTestEnum(Enum):
     THIRD = 'third'
 
 
+class CharLongValuesTestEnum(Enum):
+    FIRST = 'first value'
+    SECOND = 'second value'
+    THIRD = 'third value'
+
+
 class IntTestEnum(Enum):
     FIRST = 1
     SECOND = 2

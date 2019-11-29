@@ -52,8 +52,12 @@ class EnumChoiceField(CharField):
             validator for validator in self.validators
             if not isinstance(validator, MaxLengthValidator)
         ]
+
         self.validators.append(
-            EnumValueMaxLengthValidator(kwargs['max_length'])
+            EnumValueMaxLengthValidator(
+                value_builder=self.get_prep_value,
+                limit_value=kwargs['max_length']
+            )
         )
 
     def _get_choice_builder(self, choice_builder):

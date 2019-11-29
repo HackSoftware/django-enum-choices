@@ -130,7 +130,6 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
         with connections[settings.CURRENT_DATABASE].schema_editor() as schema_editor:
             after_migration.apply(initial, schema_editor)
 
-
         self.assertColumnType(
             'migrations_testapp__custommodel',
             'enumeration',
@@ -138,15 +137,15 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
         )
 
 
-# class MigrationExecutionSQLite3Tests(MigrationExecutionTestMixin, TransactionTestCase):
-#     database = ['default']
+class MigrationExecutionSQLite3Tests(MigrationExecutionTestMixin, TransactionTestCase):
+    database = ['default']
 
 
-@override_settings(CURRENT_DATABASE='default')
+@override_settings(CURRENT_DATABASE='postgresql')
 class MigrationExecutionPostgreSQLTests(MigrationExecutionTestMixin, TransactionTestCase):
-    databases = ['default']
+    databases = ['postgresql']
 
 
-# @override_settings(CURRENT_DATABASE='mysql')
-# class MigrationExecutionMySQLTests(MigrationExecutionTestMixin, TransactionTestCase):
-#     databases = ['mysql']
+@override_settings(CURRENT_DATABASE='mysql')
+class MigrationExecutionMySQLTests(MigrationExecutionTestMixin, TransactionTestCase):
+    databases = ['mysql']

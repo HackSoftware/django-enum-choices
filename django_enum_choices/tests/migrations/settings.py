@@ -7,18 +7,22 @@ from .database_routers import MultiDBrouter
 env = environ.Env()
 
 DATABASES = {
-    'default': env.db('DATABASE_URL', default='postgres:///django_enum_choices'),
-    # 'mysql': {
-    #     'ENGINE': 'django.db.backends.mysql',
-    #     'HOST': '127.0.0.1',
-    #     'PORT': '3306',
-    #     'NAME': 'django_enum_choices_mysql',
-    #     'USER': env('MYSQL_USER', default='test_user'),
-    #     'PASSWORD': 'test_password',
-    #     'OPTIONS': {
-    #         'init_command': 'SET default_storage_engine=INNODB',
-    #     }
-    # }
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": ":memory:"
+    },
+    'postgresql': env.db('DATABASE_URL', default='postgres:///django_enum_choices'),
+    'mysql': {
+        'ENGINE': 'django.db.backends.mysql',
+        'HOST': '127.0.0.1',
+        'PORT': '3306',
+        'NAME': 'django_enum_choices_mysql',
+        'USER': env('MYSQL_USER', default='test_user'),
+        'PASSWORD': 'test_password',
+        'OPTIONS': {
+            'init_command': 'SET default_storage_engine=INNODB',
+        }
+    }
 }
 
 DATABASE_ROUTERS = [MultiDBrouter()]

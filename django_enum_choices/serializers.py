@@ -98,7 +98,7 @@ class EnumChoiceModelSerializerMixin:
             # `model_field` is used only in children of DRF's `ModelField`
             # `choices` is not used because we use `field.enum_class` to validate the choice
             # `max_length` is generated from the model field's max_length and we don't use it
-            dump_kwargs = ('model_field', 'choices', 'max_length')
+            dump_kwargs = ('model_field', 'choices', 'max_length', 'allow_blank')
 
             initial_kwargs = {
                 'enum_class': model_field.enum_class,

@@ -10,7 +10,8 @@ from django_enum_choices.serializers import (
 from .testapp.models import (
     StringEnumeratedModel,
     MultipleEnumeratedModel,
-    CustomChoiceBuilderEnumeratedModel
+    CustomChoiceBuilderEnumeratedModel,
+    BlankNullableEnumeratedModel
 )
 from .testapp.enumerations import CharTestEnum
 
@@ -356,6 +357,19 @@ class EnumChoiceFieldModelSerializerIntegrationTests(TestCase):
             CharTestEnum.FIRST,
             instance.enumeration
         )
+
+    def test_field_can_handle_allow_blank(self):
+        # See GH-45
+        class Serializer(EnumChoiceModelSerializerMixin, serializers.ModelSerializer):
+            class Meta:
+                model = BlankNullableEnumeratedModel
+                fields = ('enumeration', )
+
+        instance = StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+        serializer = Serializer(instance)
+        serializer.data
 
 
 class MultipleEnumChoiceFieldModelSerializerIntegrationTests(TestCase):

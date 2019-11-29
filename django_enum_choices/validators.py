@@ -1,3 +1,5 @@
+from typing import Callable
+
 from django.core.validators import MaxLengthValidator
 
 
@@ -7,11 +9,12 @@ class EnumValueMaxLengthValidator(MaxLengthValidator):
     attempts to return `len(value)` when value is an enumeration
     instance, which raises an error
     """
-    def __init__(self, validate_attribute_name: bool = False, *args, **kwargs):
-        self.validate_attribute_name = validate_attribute_name
+    def __init__(self, value_builder: Callable,  *args, **kwargs):
+        self.value_builder = value_builder
 
         super().__init__(*args, **kwargs)
 
     def clean(self, x):
-        value_to_validate = x.name if self.validate_attribute_name else x.value
-        return len(str(value_to_validate))
+        value = self.value_builder(x)
+
+        return len(value)

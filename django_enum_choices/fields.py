@@ -1,3 +1,5 @@
+import functools
+
 from enum import Enum
 from typing import Tuple, Type
 
@@ -16,6 +18,15 @@ from .forms import EnumChoiceField as EnumChoiceFormField
 
 class EnumChoiceField(CharField):
     description = _('EnumChoiceField for %(enum_class)')
+
+    @classmethod
+    @functools.lru_cache(maxsize=None)
+    def get_lookups(cls):
+        all_lookups = super().get_lookups()
+        return {
+            k: v for k, v in all_lookups.items()
+            if k in ['range', 'in']
+        }
 
     def __init__(self, enum_class: Type[Enum], choice_builder=value_value, **kwargs):
         if not issubclass(enum_class, Enum):

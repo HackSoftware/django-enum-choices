@@ -23,9 +23,15 @@ class EnumChoiceField(CharField):
     @functools.lru_cache(maxsize=None)
     def get_lookups(cls):
         all_lookups = super().get_lookups()
+
+        # TODO: To discuss: Should we extend this ?
+        not_supported_lookups = [
+            'range',
+        ]
+
         return {
-            k: v for k, v in all_lookups.items()
-            if k in ['range', 'in']
+            lookup_name: lookup_value for lookup_name,
+            lookup_value in all_lookups.items() if lookup_name not in not_supported_lookups
         }
 
     def __init__(self, enum_class: Type[Enum], choice_builder=value_value, **kwargs):

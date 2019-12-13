@@ -24,14 +24,14 @@ class EnumChoiceField(CharField):
     def get_lookups(cls):
         all_lookups = super().get_lookups()
 
-        # TODO: To discuss: Should we extend this ?
-        not_supported_lookups = [
-            'range',
+        supported_lookups = [
+            'in',
+            'isnull',
         ]
 
         return {
             lookup_name: lookup_value for lookup_name,
-            lookup_value in all_lookups.items() if lookup_name not in not_supported_lookups
+            lookup_value in all_lookups.items() if lookup_name in supported_lookups
         }
 
     def __init__(self, enum_class: Type[Enum], choice_builder=value_value, **kwargs):

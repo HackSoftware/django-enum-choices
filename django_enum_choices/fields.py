@@ -42,9 +42,7 @@ class EnumChoiceField(CharField):
 
         calculated_max_length = self._calculate_max_length(**kwargs)
 
-        # raise ValueError('asdf')
-        kwargs['max_length'] = calculated_max_length
-        # kwargs.setdefault('max_length', calculated_max_length)
+        kwargs.setdefault('max_length', calculated_max_length)
 
         super().__init__(**kwargs)
 

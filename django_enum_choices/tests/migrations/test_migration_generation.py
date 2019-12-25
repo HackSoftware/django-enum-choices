@@ -12,25 +12,40 @@ from django_enum_choices.fields import EnumChoiceField
 
 
 class CustomEnum(Enum):
-    FIRST = 'first'
-    SECOND = 'second'
+    """
+    - When created by a function dynamically, the enum class attached to an `EnumChoiceField`
+      will be different every time it is deconstructed. This results in a successful migration
+      generation every time.
+
+    - By defining and using it as a global variable we can be sure that the migration generation
+      was due to a change in some of the enum's properties.
+    """
+    pass
 
 
 class MigrationTestMixin:
     def _create_initial_enum_class(self):
+        global CustomEnum
+
+        class TempEnum(Enum):
+            FIRST = 'first'
+            SECOND = 'second'
+
+        CustomEnum._member_names_ = TempEnum._member_names_
+        CustomEnum._member_map_ = TempEnum._member_map_
+
         return CustomEnum
 
     def _create_secondary_enum_class(self):
         global CustomEnum
 
-        current_enum_names = CustomEnum._member_names_
-        current_enum_map = CustomEnum._member_map_
-
-        class Temp(Enum):
+        class TempEnum(Enum):
+            FIRST = 'first'
+            SECOND = 'second'
             EXTRA_LONG_ENUMERATION = 'extra long enumeration'
 
-        CustomEnum._member_names_ = current_enum_names + Temp._member_names_
-        CustomEnum._member_map_ = {**current_enum_map, **Temp._member_map_}
+        CustomEnum._member_names_ = TempEnum._member_names_
+        CustomEnum._member_map_ = TempEnum._member_map_
 
         return CustomEnum
 
@@ -48,22 +63,21 @@ class MigrationTestMixin:
             after
         )._detect_changes().get(app_label, [])
 
-    def set_initial_model_state(self):
-        self.initial_model_state = ModelState(
+    def create_initial_model_state(self):
+        return ModelState(
             'migrations_testapp', '_CustomModel', [
                 ('id', models.AutoField(primary_key=True)),
                 ('enumeration', EnumChoiceField(self._create_initial_enum_class()))
             ]
         )
 
-    def set_secondary_model_state(self):
-        self.secondary_model_state = ModelState(
+    def create_secondary_model_state(self):
+        return ModelState(
             'migrations_testapp', '_CustomModel', [
                 ('id', models.AutoField(primary_key=True)),
                 ('enumeration', EnumChoiceField(self._create_secondary_enum_class()))
             ]
         )
-
 
 
 class MigrationExecutionTestMixin(MigrationTestMixin):
@@ -100,13 +114,12 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
 
             internal_size = column.internal_size
 
-
             self.assertEqual(field_type, 'CharField')
             self.assertEqual(internal_size, column_size)
 
     def test_migration_is_applied(self):
-        self.set_initial_model_state()
-        initial = self.make_project_state([self.initial_model_state])
+        initial_model_state = self.create_initial_model_state()
+        initial = self.make_project_state([initial_model_state])
 
         initial_migration = self.get_changes('migrations_testapp', ProjectState(), initial)[0]
 
@@ -122,13 +135,13 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
             6
         )
 
-        self.set_secondary_model_state()
-        initial = self.make_project_state([self.initial_model_state])
-        after = self.make_project_state([self.secondary_model_state])
+        secondary_model_state = self.create_secondary_model_state()
+
+        after = self.make_project_state([secondary_model_state])
         after_migration = self.get_changes('migrations_testapp', applied_initial_state, after)[0]
 
         with connections[settings.CURRENT_DATABASE].schema_editor() as schema_editor:
-            after_migration.apply(initial, schema_editor)
+            after_migration.apply(applied_initial_state, schema_editor)
 
         self.assertColumnType(
             'migrations_testapp__custommodel',

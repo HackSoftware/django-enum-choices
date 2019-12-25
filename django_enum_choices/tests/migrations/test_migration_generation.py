@@ -80,6 +80,39 @@ class MigrationTestMixin:
         )
 
 
+class MigrationGenerationTests(MigrationTestMixin, TestCase):
+    def test_migration_changes(self):
+        initial_model_state = self.create_initial_model_state()
+        secondary_model_state = self.create_secondary_model_state()
+
+        initial = self.make_project_state([initial_model_state])
+        after = self.make_project_state([secondary_model_state])
+
+        changes = self.get_changes('migrations_testapp', initial, after)
+
+        self.assertEqual(len(changes), 1)
+
+        operations = changes[0].operations
+
+        self.assertEqual(len(operations), 1)
+
+        operation = operations[0]
+        *_, deconstruction_kwargs = operation.field.deconstruct()
+
+        self.assertEqual(
+            deconstruction_kwargs.get('max_length', 0),
+            len(self._create_secondary_enum_class().EXTRA_LONG_ENUMERATION.value)
+        )
+        self.assertEqual(
+            deconstruction_kwargs.get('choices', []),
+            [
+                ('first', 'first'),
+                ('second', 'second'),
+                ('extra long enumeration', 'extra long enumeration')
+            ]
+        )
+
+
 class MigrationExecutionTestMixin(MigrationTestMixin):
     # databases = ['default']
 
@@ -151,7 +184,7 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
 
 
 class MigrationExecutionSQLite3Tests(MigrationExecutionTestMixin, TransactionTestCase):
-    database = ['default']
+    databases = ['default']
 
 
 @override_settings(CURRENT_DATABASE='postgresql')

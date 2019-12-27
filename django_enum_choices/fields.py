@@ -99,7 +99,7 @@ class EnumChoiceField(CharField):
             self.choice_builder(value)
         )
 
-    def from_db_value(self, value, expression, connection, *args):
+    def from_db_value(self, value, expression, connection, *args, context=None):
         # Accepting `*args` because Django 1.11 calls with an extra
         # `context` argument
 

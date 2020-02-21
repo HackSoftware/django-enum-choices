@@ -27,6 +27,7 @@ class EnumChoiceField(CharField):
         supported_lookups = [
             'in',
             'isnull',
+            'exact'
         ]
 
         return {

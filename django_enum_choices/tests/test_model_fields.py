@@ -354,3 +354,13 @@ class EnumChoiceFieldTests(TestCase):
         result = instance.formfield()
 
         self.assertIsInstance(result, EnumChoiceFormField)
+
+    def test_get_lookups_returns_only_supported_lookups(self):
+        supported_lookups = ('exact', 'in', 'isnull')
+
+        lookups = EnumChoiceField.get_lookups()
+
+        self.assertEqual(len(lookups), len(supported_lookups))
+
+        for lookup in supported_lookups:
+            self.assertIn(lookup, lookups)

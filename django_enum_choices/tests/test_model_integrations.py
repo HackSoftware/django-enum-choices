@@ -1,6 +1,6 @@
 from django.test import TestCase
 from django.core import serializers
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, FieldError
 
 from django_enum_choices.fields import EnumChoiceField
 
@@ -180,3 +180,44 @@ class ModelIntegrationTests(TestCase):
             EnumChoiceFieldWithDefaultModel._meta.get_field('enumeration').default,
             instance.enumeration
         )
+
+    def test_searching_by_unsupported_lookup_raises_field_error(self):
+        all_lookups = {
+            'exact': CharTestEnum.FIRST,
+            'iexact': CharTestEnum.FIRST,
+            'gt': CharTestEnum.FIRST,
+            'gte': CharTestEnum.FIRST,
+            'lt': CharTestEnum.FIRST,
+            'lte': CharTestEnum.FIRST,
+            'in': [CharTestEnum.FIRST],
+            'contains': CharTestEnum.FIRST,
+            'icontains': CharTestEnum.FIRST,
+            'startswith': CharTestEnum.FIRST,
+            'istartswith': CharTestEnum.FIRST,
+            'endswith': CharTestEnum.FIRST,
+            'iendswith': CharTestEnum.FIRST,
+            'range': CharTestEnum.FIRST,
+            'isnull': False,
+            'regex': CharTestEnum.FIRST,
+            'iregex': CharTestEnum.FIRST,
+        }
+
+        supported_lookups = ('exact', 'in', 'isnull')
+
+        StringEnumeratedModel.objects.create(
+            enumeration=CharTestEnum.FIRST
+        )
+
+        for lookup, value in all_lookups.items():
+            if lookup not in supported_lookups:
+                with self.assertRaises(FieldError):
+                    StringEnumeratedModel.objects.filter(**{
+                        'enumeration__{}'.format(lookup): value
+                    }).count()
+
+            if lookup in supported_lookups:
+                result = StringEnumeratedModel.objects.filter(**{
+                    'enumeration__{}'.format(lookup): value
+                })
+
+                self.assertEqual(result.count(), 1)

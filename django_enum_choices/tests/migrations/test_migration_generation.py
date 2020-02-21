@@ -11,19 +11,41 @@ from django.db.migrations.state import ModelState, ProjectState
 from django_enum_choices.fields import EnumChoiceField
 
 
+class CustomEnum(Enum):
+    """
+    - When created by a function dynamically, the enum class attached to an `EnumChoiceField`
+      will be different every time it is deconstructed. This results in a successful migration
+      generation every time.
+
+    - By defining and using it as a global variable we can be sure that the migration generation
+      was due to a change in some of the enum's properties.
+    """
+    pass
+
+
 class MigrationTestMixin:
     def _create_initial_enum_class(self):
-        class CustomEnum(Enum):
+        global CustomEnum
+
+        class TempEnum(Enum):
             FIRST = 'first'
             SECOND = 'second'
+
+        CustomEnum._member_names_ = TempEnum._member_names_
+        CustomEnum._member_map_ = TempEnum._member_map_
 
         return CustomEnum
 
     def _create_secondary_enum_class(self):
-        class CustomEnum(Enum):
+        global CustomEnum
+
+        class TempEnum(Enum):
             FIRST = 'first'
             SECOND = 'second'
             EXTRA_LONG_ENUMERATION = 'extra long enumeration'
+
+        CustomEnum._member_names_ = TempEnum._member_names_
+        CustomEnum._member_map_ = TempEnum._member_map_
 
         return CustomEnum
 
@@ -41,15 +63,16 @@ class MigrationTestMixin:
             after
         )._detect_changes().get(app_label, [])
 
-    def setUp(self):
-        self.initial_model_state = ModelState(
+    def create_initial_model_state(self):
+        return ModelState(
             'migrations_testapp', '_CustomModel', [
                 ('id', models.AutoField(primary_key=True)),
                 ('enumeration', EnumChoiceField(self._create_initial_enum_class()))
             ]
         )
 
-        self.secondary_model_state = ModelState(
+    def create_secondary_model_state(self):
+        return ModelState(
             'migrations_testapp', '_CustomModel', [
                 ('id', models.AutoField(primary_key=True)),
                 ('enumeration', EnumChoiceField(self._create_secondary_enum_class()))
@@ -59,8 +82,11 @@ class MigrationTestMixin:
 
 class MigrationGenerationTests(MigrationTestMixin, TestCase):
     def test_migration_changes(self):
-        initial = self.make_project_state([self.initial_model_state])
-        after = self.make_project_state([self.secondary_model_state])
+        initial_model_state = self.create_initial_model_state()
+        secondary_model_state = self.create_secondary_model_state()
+
+        initial = self.make_project_state([initial_model_state])
+        after = self.make_project_state([secondary_model_state])
 
         changes = self.get_changes('migrations_testapp', initial, after)
 
@@ -88,7 +114,7 @@ class MigrationGenerationTests(MigrationTestMixin, TestCase):
 
 
 class MigrationExecutionTestMixin(MigrationTestMixin):
-    databases = ['default']
+    # databases = ['default']
 
     def assertColumnType(self, table, column, column_size):
         using = settings.CURRENT_DATABASE
@@ -125,8 +151,8 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
             self.assertEqual(internal_size, column_size)
 
     def test_migration_is_applied(self):
-        initial = self.make_project_state([self.initial_model_state])
-        after = self.make_project_state([self.secondary_model_state])
+        initial_model_state = self.create_initial_model_state()
+        initial = self.make_project_state([initial_model_state])
 
         initial_migration = self.get_changes('migrations_testapp', ProjectState(), initial)[0]
 
@@ -142,10 +168,13 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
             6
         )
 
+        secondary_model_state = self.create_secondary_model_state()
+
+        after = self.make_project_state([secondary_model_state])
         after_migration = self.get_changes('migrations_testapp', applied_initial_state, after)[0]
 
         with connections[settings.CURRENT_DATABASE].schema_editor() as schema_editor:
-            after_migration.apply(initial, schema_editor)
+            after_migration.apply(applied_initial_state, schema_editor)
 
         self.assertColumnType(
             'migrations_testapp__custommodel',
@@ -155,7 +184,7 @@ class MigrationExecutionTestMixin(MigrationTestMixin):
 
 
 class MigrationExecutionSQLite3Tests(MigrationExecutionTestMixin, TransactionTestCase):
-    database = ['default']
+    databases = ['default']
 
 
 @override_settings(CURRENT_DATABASE='postgresql')

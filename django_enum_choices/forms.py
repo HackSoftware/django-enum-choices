@@ -31,9 +31,6 @@ class EnumChoiceField(forms.ChoiceField):
         if value is None:
             return
 
-        if value in self.empty_values:
-            return ''
-
         return self._enum_from_input_value(value) or value
 
     def prepare_value(self, value):

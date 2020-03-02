@@ -13,6 +13,7 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
   - [Choice builders](#choice-builders)
   - [Changing/Removing options from enumerations](#changingremoving-options-from-enumerations)
     - [Changing options](#changing-options)
+    - [Removing options](#removing-options)
   - [Usage inside the admin panel](#usage-in-the-admin-panel)
   - [Usage with forms](#usage-with-forms)
     - [Usage with `django.forms.ModelForm`](#usage-with-djangoformsmodelform)
@@ -150,7 +151,7 @@ Which will result in the following choices `(('a', 'Aa'), ('b', 'Bb'))`
 The values in the returned from `choice_builder` tuple will be cast to strings before being used.
 
 ## Changing/Removing options from enumerations
-At any given point of time all instances of a model that has EnumChoiceField must have a value that is currently present in the enumeration.
+At any given point of time all instances of a model that has `EnumChoiceField` must have a value that is currently present in the enumeration.
 When changing or removing an option from the enumeration, a custom database migration must be made prior to the enumeration change.
 
 ### Changing options
@@ -211,7 +212,7 @@ class Migration(migrations.Migration):
 python manage.py migrate
 ```
 
-3. Remove old field and rename new one
+3. Remove old option and rename new one
 ```python
 class MyEnum:
     A = 'a_updated'
@@ -236,6 +237,90 @@ class Migration(migrations.Migration):
         migrations.RunPython(forwards),
     ]
 ```
+
+### Removing options
+Removing options from the enumeration includes several operations as well:
+
+1. Optional: Making the field nullable (if we want our existing instances' values to be `None`)
+2. Migrating all instances to a new option (or None)
+3. Removing the option from the enumeration
+4. Removing the custom data migration code, so migrations can be run on a clean database without an `AttributeError` ocurring
+
+Example:
+
+Initial setup:
+
+```python
+class MyEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+# Desired change:
+# class MyEnum(Enum):
+#     A = 'a'
+
+class MyModel(models.Model):
+    enumerated_field = EnumChoiceField(MyEnum)
+```
+
+1. Optional: Make the field nullable (if you want your existing instances to have a `None` value)
+```python
+class MyModel(models.Model):
+    enumerated_field = EnumChoiceField(MyEnum, blank=True, null=True)
+```
+```bash
+python manage.py makemigrations
+```
+
+2. Migrate model instances
+```bash
+python manage.py makemigrations app_label --empty
+```
+```python
+# migration_name.py
+
+def forwards(apps, schema_editor):
+    MyModel = apps.get_model('app_label', 'MyModel')
+
+    MyModel.objects.filter(enumerated_field=MyEnum.B).update(enumerated_field=MyEnum.A)
+	# OR MyModel.objects.filter(enumerated_field=MyEnum.B).update(enumerated_field=None)
+
+class Migration(migrations.Migration):
+    ...
+
+    operations = [
+        migrations.RunPython(forwards),
+    ]
+```
+```bash
+python manage.py migrate
+```
+
+3. Remove old option
+```python
+class MyEnum:
+    A = 'a
+```
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+4. Remove custom data migration code
+```python
+# migration_name.py
+
+def forwards(apps, schema_editor):
+	pass
+
+class Migration(migrations.Migration):
+    ...
+
+    operations = [
+        migrations.RunPython(forwards),
+    ]
+```
+
 
 ## Usage in the admin panel
 

@@ -11,6 +11,8 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
   - [Installation](#installation)
   - [Basic Usage](#basic-usage)
   - [Choice builders](#choice-builders)
+  - [Changing/Removing options from enumerations](#changingremoving-options-from-enumerations)
+    - [Changing options](#changing-options)
   - [Usage inside the admin panel](#usage-in-the-admin-panel)
   - [Usage with forms](#usage-with-forms)
     - [Usage with `django.forms.ModelForm`](#usage-with-djangoformsmodelform)
@@ -147,6 +149,93 @@ Which will result in the following choices `(('a', 'Aa'), ('b', 'Bb'))`
 
 The values in the returned from `choice_builder` tuple will be cast to strings before being used.
 
+## Changing/Removing options from enumerations
+At any given point of time all instances of a model that has EnumChoiceField must have a value that is currently present in the enumeration.
+When changing or removing an option from the enumeration, a custom database migration must be made prior to the enumeration change.
+
+### Changing options
+When chaging options we'll need several operations:
+
+1. Inserting a new option with the new value that we want
+2. Migrating all instances from the old option to the new one
+3. Removing the old option and renaming the old one
+4. Removing the custom data migration code, so migrations can be run on a clean database without an `AttributeError` ocurring
+
+Example:
+
+Initial setup:
+
+```python
+class MyEnum(Enum):
+    A = 'a'
+    B = 'b'
+
+# Desired change:
+# A = 'a_updated'
+
+class MyModel(models.Model):
+    enumerated_field = EnumChoiceField(MyEnum)
+```
+
+1. Insert a new option with the desired new value:
+```python
+class MyEnum:
+    A_UPDATED = 'a_updated'
+    A = 'a'
+    B = 'b'
+```
+```bash
+python manage.py makemigrations
+```
+
+2. Migrate model instances
+```bash
+python manage.py makemigrations app_label --empty
+```
+```python
+# migration_name.py
+
+def forwards(apps, schema_editor):
+    MyModel = apps.get_model('app_label', 'MyModel')
+
+    MyModel.objects.filter(enumerated_field=MyEnum.A).update(enumerated_field=MyEnum.A_UPDATED)
+
+class Migration(migrations.Migration):
+    ...
+
+    operations = [
+        migrations.RunPython(forwards),
+    ]
+```
+```bash
+python manage.py migrate
+```
+
+3. Remove old field and rename new one
+```python
+class MyEnum:
+    A = 'a_updated'
+    B = 'b'
+```
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+
+4. Remove custom data migration code
+```python
+# migration_name.py
+
+def forwards(apps, schema_editor):
+	pass
+
+class Migration(migrations.Migration):
+    ...
+
+    operations = [
+        migrations.RunPython(forwards),
+    ]
+```
 
 ## Usage in the admin panel
 

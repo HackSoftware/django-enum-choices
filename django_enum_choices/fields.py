@@ -82,7 +82,7 @@ class EnumChoiceField(CharField):
         return max_choice_length
 
     def to_enum_value(self, value):
-        if value is None:
+        if value is None or value in self.empty_values:
             return
 
         for choice in self.enum_class:

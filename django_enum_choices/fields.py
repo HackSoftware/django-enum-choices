@@ -201,7 +201,7 @@ class EnumChoiceField(CharField):
         for k in list(kwargs):
             if k not in (
                 'coerce', 'choices', 'required', 'enum_class', 'disabled',
-                'choice_builder, ''widget', 'label', 'initial', 'help_text',
+                'choice_builder', 'widget', 'label', 'initial', 'help_text',
                 'error_messages', 'show_hidden_initial',
             ):
                 del kwargs[k]

@@ -139,12 +139,24 @@ class EnumChoiceField(CharField):
         if not self.blank and value in self.empty_values:
             raise ValidationError(self.error_messages['blank'], code='blank')
 
-        if value not in self.enum_class:
-            raise ValidationError(
-                self.error_messages['invalid_choice'],
-                code='invalid_choice',
-                params={'value': value}
-            )
+        enum_value = value
+
+        if not isinstance(enum_value, self.enum_class):
+            try:
+                enum_value = self.to_enum_value(value)
+
+                if enum_value not in self.enum_class:
+                    raise ValidationError(
+                        self.error_messages['invalid_choice'],
+                        code='invalid_choice',
+                        params={'value': value}
+                    )
+            except ValidationError:
+                raise ValidationError(
+                    self.error_messages['invalid_choice'],
+                    code='invalid_choice',
+                    params={'value': value}
+                )
 
     def value_to_string(self, obj):
         value = self.value_from_object(obj)

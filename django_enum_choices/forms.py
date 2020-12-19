@@ -42,4 +42,4 @@ class EnumChoiceField(forms.ChoiceField):
         return value
 
     def valid_value(self, value):
-        return value in self.enum_class
+        return isinstance(value, self.enum_class) and value in self.enum_class

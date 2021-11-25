@@ -8,6 +8,8 @@ A custom Django choice field to use with [Python enums.](https://docs.python.org
 
 Starting with version 3.0, Django started supporting [Enumerations for model field choices](https://docs.djangoproject.com/en/dev/releases/3.0/#enumerations-for-model-field-choices) and we recommend using this as a native Django feature, instead of `django-enum-choices`
 
+**If you are using `django-enum-choices` and you want to upgrade your project to Django >= `3.0` you can refer to the guide in the wiki: [Migrating to Django 3](https://github.com/HackSoftware/django-enum-choices/wiki/Migrating-to-Django-3)**
+
 ## Table of Contents
 
 - [django-enum-choices](#django-enum-choices)

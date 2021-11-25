@@ -1,8 +1,12 @@
-# django-enum-choices
+# django-enum-choices (DEPRECATED)
 
 A custom Django choice field to use with [Python enums.](https://docs.python.org/3/library/enum.html)
 
 [![PyPI version](https://badge.fury.io/py/django-enum-choices.svg)](https://badge.fury.io/py/django-enum-choices)
+
+## ⚠️ Disclaimer ⚠️
+
+Starting with version 3.0, Django started supporting [Enumerations for model field choices](https://docs.djangoproject.com/en/dev/releases/3.0/#enumerations-for-model-field-choices) and we recommend using this as a native Django feature, instead of `django-enum-choices`
 
 ## Table of Contents
 
